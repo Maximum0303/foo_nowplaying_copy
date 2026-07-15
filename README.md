@@ -1,0 +1,2 @@
+# foo_nowplaying_copy
+再生中の曲情報とアートワークから投稿文を作成するfoobar2000コンポーネント
