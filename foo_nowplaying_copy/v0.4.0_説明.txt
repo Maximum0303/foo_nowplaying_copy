@@ -1,0 +1,16 @@
+﻿NowPlaying Copy & Artwork v0.4.0
+
+追加機能：
+・foobar2000の［ファイル］→［基本設定］→［ツール］に
+  「NowPlaying Copy & Artwork」設定ページを追加
+・投稿文のTitle Formatting書式を変更可能
+・保存先フォルダを変更可能
+・nowplaying.txt保存のオン／オフ
+・アートワーク保存のオン／オフ
+・ZIP内画像検索のオン／オフ
+・完了メッセージ表示のオン／オフ
+
+初期投稿文：
+#NowPlaying %title% - %artist%
+
+ビルド：Release / x64 で［ソリューションのリビルド］を実行してください。

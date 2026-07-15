@@ -1,0 +1,8 @@
+﻿NowPlaying Copy & Artwork v0.6.7
+
+修正内容：
+・設定ページの get_state() に dark_mode_supported を追加
+・foobar2000の設定ウィンドウ側へ、当ページがダークモード対応であることを通知
+・親ページが白いまま、入力欄だけ黒くなる不整合を修正
+
+Release / x64 で［ソリューションのリビルド］を実行してください。

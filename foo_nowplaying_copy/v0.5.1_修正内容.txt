@@ -1,0 +1,8 @@
+﻿NowPlaying Copy & Artwork v0.5.1
+
+修正：
+・プレビュー画面内で使用する get_window_text_string() の
+  前方宣言を追加しました。
+・main.cpp 1100行／1110行付近の C3861 エラーを修正しました。
+
+Release / x64 で［ソリューションのリビルド］を実行してください。

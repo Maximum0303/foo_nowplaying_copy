@@ -1,0 +1,7 @@
+﻿NowPlaying Copy & Artwork v0.4.1
+
+修正：
+・foobar2000 SDK 2025-03-07では preferences_page_instance の
+  デストラクターを override 指定できないため、指定を削除しました。
+
+Release / x64 で［ソリューションのリビルド］を実行してください。

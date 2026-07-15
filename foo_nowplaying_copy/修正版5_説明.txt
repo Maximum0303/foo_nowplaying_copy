@@ -1,0 +1,7 @@
+﻿修正版5（v0.2.0）
+・foobar2000内部の unpack://zip|file://... 形式を解析できるよう修正
+・PowerShell引数の引用方法を修正
+・失敗時に nowplaying-debug.txt を出力
+・古いartworkファイルを抽出前に削除
+
+Release / x64 でソリューションをリビルドしてください。

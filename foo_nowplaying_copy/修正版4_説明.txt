@@ -1,0 +1,2 @@
+﻿修正版4では、不要だった foobar2000_sdk_helpers / WTL 依存を削除しました。
+Visual Studioで Release / x64 を選び、ソリューションのリビルドを実行してください。

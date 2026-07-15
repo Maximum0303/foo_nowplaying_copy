@@ -1,0 +1,9 @@
+﻿NowPlaying Copy & Artwork v0.6.5
+
+修正内容：
+・通常のEDITコントロールでは使えない EM_SETBKGNDCOLOR を削除
+・SetWindowThemeを使ったダークテーマ適用へ変更
+・WM_THEMECHANGEDが重複していたコンパイルエラーを修正
+・プレビュー画面の背景ブラシもダーク配色へ統一
+
+Release / x64 で［ソリューションのリビルド］を実行してください。
