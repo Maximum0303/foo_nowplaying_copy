@@ -199,14 +199,21 @@ Windows 64-bit
 
 ## Screenshots
 
-スクリーンショットを追加する場合は、リポジトリに `images` フォルダーを作成し、次のように掲載できます。
+### 投稿プレビュー
 
-```markdown
-![投稿プレビュー](images/preview.png)
-![設定画面](images/settings.png)
-![投稿履歴](images/history.png)
-![ヘルプ画面](images/help.png)
-```
+<img src="images/preview.png" alt="投稿プレビュー" width="760">
+
+### 設定画面
+
+<img src="images/settings.png" alt="設定画面" width="730">
+
+### 投稿履歴
+
+<img src="images/history.png" alt="投稿履歴" width="860">
+
+### ヘルプ画面
+
+<img src="images/help.png" alt="ヘルプ画面" width="754">
 
 ## Build
 
