@@ -1,0 +1,71 @@
+name: 機能要望
+description: NowPlaying Copy & Artworkへの機能追加や改善を提案します
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ご提案ありがとうございます。
+        すべての要望を実装できるとは限りませんが、今後の参考にさせていただきます。
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 関連する機能
+      options:
+        - 投稿プレビュー
+        - 投稿文・テンプレート
+        - アートワーク検索
+        - 画像最適化
+        - X投稿補助
+        - 投稿履歴
+        - 設定の保存・読み込み
+        - 履歴のバックアップ・復元
+        - ヘルプ画面
+        - その他
+    validations:
+      required: true
+
+  - type: textarea
+    id: request
+    attributes:
+      label: 欲しい機能・改善内容
+      description: どのような機能や改善が欲しいかを具体的に記載してください。
+    validations:
+      required: true
+
+  - type: textarea
+    id: reason
+    attributes:
+      label: その機能が必要な理由
+      description: 現在どのような点で困っているか、どのように便利になるかを記載してください。
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 動作イメージ
+      description: ボタン名、操作手順、設定項目など、具体的な案があれば記載してください。
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 現在の代替方法
+      description: 今はどのような方法で対応しているかがあれば記載してください。
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: その他
+      description: 参考画像や補足情報があれば記載してください。
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: 確認
+      options:
+        - label: 同じ内容のIssueがないか確認しました。
+          required: true

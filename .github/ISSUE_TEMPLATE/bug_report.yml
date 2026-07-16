@@ -1,0 +1,129 @@
+name: 不具合報告
+description: NowPlaying Copy & Artworkで発生した不具合を報告します
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        不具合報告ありがとうございます。
+        分かる範囲で構いませんので、以下の項目を入力してください。
+        個人情報、音源ファイル、投稿履歴などは添付しないようご注意ください。
+
+  - type: input
+    id: component_version
+    attributes:
+      label: コンポーネントのバージョン
+      description: 例：v1.1.4
+      placeholder: v1.1.4
+    validations:
+      required: true
+
+  - type: input
+    id: foobar_version
+    attributes:
+      label: foobar2000のバージョン
+      description: 例：foobar2000 v2.26 preview x64
+      placeholder: foobar2000 v2.x x64
+    validations:
+      required: true
+
+  - type: input
+    id: windows_version
+    attributes:
+      label: Windowsのバージョン
+      description: 例：Windows 11 64-bit
+      placeholder: Windows 11 64-bit
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 問題が起きた機能
+      options:
+        - 投稿プレビュー
+        - 投稿文・テンプレート
+        - アートワーク検索
+        - 画像最適化
+        - X投稿補助
+        - 投稿履歴
+        - 設定の保存・読み込み
+        - 履歴のバックアップ・復元
+        - ヘルプ画面
+        - その他
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 不具合の内容
+      description: 何が起きたかを具体的に記載してください。
+      placeholder: 例：［画像をコピーしてXを開く］を押しても画像がコピーされません。
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順
+      description: 問題が起きるまでの操作を順番に記載してください。
+      placeholder: |
+        1. foobar2000で曲を再生する
+        2. ［NowPlaying投稿を作成］を開く
+        3. ［画像をコピーしてXを開く］を押す
+        4. 問題が発生する
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待する動作
+      description: 本来どのように動作してほしかったかを記載してください。
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 実際の動作・エラーメッセージ
+      description: 表示されたエラーがあれば、そのまま貼り付けてください。
+      render: text
+
+  - type: input
+    id: audio_format
+    attributes:
+      label: 使用した音源形式
+      description: 例：FLAC、MP3、AAC、ZIP内音源など
+      placeholder: FLAC
+
+  - type: textarea
+    id: artwork
+    attributes:
+      label: アートワークの状態
+      description: 埋め込み画像、同一フォルダー、ZIP内など、分かる範囲で記載してください。
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: スクリーンショット
+      description: 必要に応じて画像をドラッグ＆ドロップしてください。個人情報やパス表示にご注意ください。
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: その他
+      description: 補足情報があれば記載してください。
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: 確認
+      options:
+        - label: 同じ内容のIssueがないか確認しました。
+          required: true
+        - label: 個人情報、音源ファイル、投稿履歴を添付していません。
+          required: true
