@@ -1,0 +1,14 @@
+﻿NowPlaying Copy & Artwork v1.1.4
+
+追加・変更内容：
+・MIT Licenseを正式に採用
+・著作権者を Maximum として表記
+・GitHubリポジトリ用のLICENSEを追加
+・fb2k-component配布パッケージ用のlicense.txtを追加
+・コンポーネント情報に著作権とMIT Licenseを表示
+・内蔵ヘルプにライセンス項目を追加
+
+Copyright (c) 2026 Maximum
+
+Release / x64 で［ソリューションのリビルド］を実行してください。
+ビルド後のDLLとlicense.txtをfb2k-componentへ収録します。

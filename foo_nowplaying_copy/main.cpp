@@ -32,8 +32,11 @@ namespace fs = std::filesystem;
 
 DECLARE_COMPONENT_VERSION(
     "NowPlaying Copy & Artwork",
-    "1.1.3",
-    "Fixes help-window line breaks and enables readable wrapped text."
+    "1.2.2",
+    "Creates NowPlaying post text and artwork.\\n"
+    "Japanese / English user interface.\\n"
+    "Copyright (c) 2026 Maximum\\n"
+    "Licensed under the MIT License."
 );
 VALIDATE_COMPONENT_FILENAME("foo_nowplaying_copy.dll");
 
@@ -70,6 +73,7 @@ namespace {
     const GUID guid_cfg_artwork_square_mode = { 0xdb2854d1, 0xb748, 0x463d, { 0x9b, 0x67, 0x8f, 0xb4, 0x1a, 0x15, 0xb3, 0xd1 } };
     const GUID guid_cfg_history_limit = { 0x30ee8497, 0xc2cb, 0x495d, { 0x90, 0x04, 0x4c, 0x1a, 0x8d, 0x4c, 0x85, 0x57 } };
     const GUID guid_cfg_history_display_limit = { 0x73c7bc20, 0x18c6, 0x4b36, { 0xa1, 0x56, 0xc5, 0xf4, 0x42, 0x55, 0x6c, 0xb9 } };
+    const GUID guid_cfg_ui_language = { 0x73eaf314, 0xe6d3, 0x47c2, { 0xb9, 0x1d, 0x42, 0xf4, 0x6c, 0xa1, 0x7e, 0x35 } };
 
     const GUID guid_cfg_template_name_1 = { 0xa8839664, 0x7235, 0x4ab2, { 0x84, 0x25, 0x13, 0xf0, 0xbe, 0x9c, 0xf1, 0x11 } };
     const GUID guid_cfg_template_name_2 = { 0x07139d21, 0xd0c6, 0x4c2e, { 0xb9, 0xf2, 0x32, 0x4c, 0xd4, 0x6d, 0xc3, 0x2d } };
@@ -104,6 +108,7 @@ namespace {
     static cfg_string g_cfg_artwork_square_mode(guid_cfg_artwork_square_mode, "0");
     static cfg_string g_cfg_history_limit(guid_cfg_history_limit, "100");
     static cfg_string g_cfg_history_display_limit(guid_cfg_history_display_limit, "100");
+    static cfg_string g_cfg_ui_language(guid_cfg_ui_language, "auto");
 
     static cfg_string g_cfg_template_name_1(guid_cfg_template_name_1, "シンプル");
     static cfg_string g_cfg_template_name_2(guid_cfg_template_name_2, "改行タイプ");
@@ -117,6 +122,229 @@ namespace {
     static cfg_string g_cfg_selected_template(guid_cfg_selected_template, "0");
     static cfg_string g_cfg_template_schema_version(guid_cfg_template_schema_version, "");
     static cfg_string g_cfg_template_collection(guid_cfg_template_collection, "");
+
+    bool ui_uses_english() {
+        const pfc::string8 configured = g_cfg_ui_language.get();
+        if (std::strcmp(configured.c_str(), "en") == 0) return true;
+        if (std::strcmp(configured.c_str(), "ja") == 0) return false;
+        const LANGID language = GetUserDefaultUILanguage();
+        return PRIMARYLANGID(language) != LANG_JAPANESE;
+    }
+
+    const wchar_t* ui_text(const wchar_t* japanese) {
+        if (!ui_uses_english() || japanese == nullptr) return japanese;
+        if (std::wcscmp(japanese, L"中央を正方形に切り抜く") == 0) return L"Center square crop";
+        if (std::wcscmp(japanese, L"そのまま縮小") == 0) return L"Keep aspect ratio";
+        if (std::wcscmp(japanese, L"解像度不明") == 0) return L"Unknown resolution";
+        if (std::wcscmp(japanese, L"テンプレート ") == 0) return L"Template ";
+        if (std::wcscmp(japanese, L"埋め込みフロントカバーのデータが空でした。") == 0) return L"The embedded front-cover data was empty.";
+        if (std::wcscmp(japanese, L"埋め込み画像をファイルへ保存できませんでした。") == 0) return L"Could not save the embedded artwork.";
+        if (std::wcscmp(japanese, L"埋め込みフロントカバーはありません。") == 0) return L"No embedded front cover was found.";
+        if (std::wcscmp(japanese, L"埋め込み画像の取得エラー：") == 0) return L"Embedded artwork error: ";
+        if (std::wcscmp(japanese, L"埋め込み画像の取得中に不明なエラーが発生しました。") == 0) return L"An unknown error occurred while reading embedded artwork.";
+        if (std::wcscmp(japanese, L"バックアップ情報ファイルが見つかりません。") == 0) return L"The backup information file was not found.";
+        if (std::wcscmp(japanese, L"バックアップ情報ファイルのサイズが不正です。") == 0) return L"The backup information file has an invalid size.";
+        if (std::wcscmp(japanese, L"NowPlaying投稿履歴のバックアップではありません。") == 0) return L"This is not a NowPlaying history backup.";
+        if (std::wcscmp(japanese, L"対応していない履歴バックアップのバージョンです。") == 0) return L"This history-backup version is not supported.";
+        if (std::wcscmp(japanese, L"元画像：") == 0) return L"Source: ";
+        if (std::wcscmp(japanese, L"投稿用：") == 0) return L"Post image: ";
+        if (std::wcscmp(japanese, L"画質") == 0) return L"Quality";
+        if (std::wcscmp(japanese, L"最大") == 0) return L"Max ";
+        if (std::wcscmp(japanese, L"すべて") == 0) return L"All";
+        if (std::wcscmp(japanese, L"件") == 0) return L" items";
+        if (std::wcscmp(japanese, L"NowPlaying投稿履歴") == 0) return L"NowPlaying Post History";
+        if (std::wcscmp(japanese, L"投稿履歴を再読み込みしました。") == 0) return L"Post history was reloaded.";
+        if (std::wcscmp(japanese, L"投稿履歴") == 0) return L"Post History";
+        if (std::wcscmp(japanese, L"曲名・アーティスト・投稿文などを検索") == 0) return L"Search title, artist, post text, etc.";
+        if (std::wcscmp(japanese, L"再読込") == 0) return L"Reload";
+        if (std::wcscmp(japanese, L"★ ピン留めのみ表示") == 0) return L"★ Pinned only";
+        if (std::wcscmp(japanese, L"履歴を書き出す...") == 0) return L"Export history...";
+        if (std::wcscmp(japanese, L"履歴を読み込む...") == 0) return L"Import history...";
+        if (std::wcscmp(japanese, L"選択した履歴（Ctrl／Shiftで複数選択）") == 0) return L"Selected history (Ctrl/Shift for multiple selection)";
+        if (std::wcscmp(japanese, L"プレビューで開く") == 0) return L"Open in Preview";
+        if (std::wcscmp(japanese, L"文章をコピー") == 0) return L"Copy Text";
+        if (std::wcscmp(japanese, L"画像をコピー") == 0) return L"Copy Image";
+        if (std::wcscmp(japanese, L"Xで再投稿") == 0) return L"Repost on X";
+        if (std::wcscmp(japanese, L"画像をコピーしてXを開く") == 0) return L"Copy Image and Open X";
+        if (std::wcscmp(japanese, L"保存フォルダを開く") == 0) return L"Open Output Folder";
+        if (std::wcscmp(japanese, L"ピン留め") == 0) return L"Pin";
+        if (std::wcscmp(japanese, L"選択履歴を削除") == 0) return L"Delete Selected";
+        if (std::wcscmp(japanese, L"すべて削除") == 0) return L"Delete All";
+        if (std::wcscmp(japanese, L"閉じる") == 0) return L"Close";
+        if (std::wcscmp(japanese, L"（タイトル不明）") == 0) return L"(Unknown title)";
+        if (std::wcscmp(japanese, L"投稿履歴はまだありません。") == 0) return L"There is no post history yet.";
+        if (std::wcscmp(japanese, L"検索条件に一致する履歴はありません。") == 0) return L"No history entries match the search.";
+        if (std::wcscmp(japanese, L"履歴を選択してください。") == 0) return L"Select a history entry.";
+        if (std::wcscmp(japanese, L"日時：") == 0) return L"Date/Time: ";
+        if (std::wcscmp(japanese, L"テンプレート：") == 0) return L"Template: ";
+        if (std::wcscmp(japanese, L"（不明）") == 0) return L"(Unknown)";
+        if (std::wcscmp(japanese, L"　★ピン留め中") == 0) return L"  ★ Pinned";
+        if (std::wcscmp(japanese, L"　ピン留めなし") == 0) return L"  Not pinned";
+        if (std::wcscmp(japanese, L"画像：") == 0) return L"Image: ";
+        if (std::wcscmp(japanese, L"なし") == 0) return L"None";
+        if (std::wcscmp(japanese, L"（ファイルが見つかりません）") == 0) return L"(File not found)";
+        if (std::wcscmp(japanese, L"文章コピー・ピン留め・削除を一括操作できます。") == 0) return L"You can copy text, pin, or delete the selected entries in bulk.";
+        if (std::wcscmp(japanese, L"画像：複数選択中のため個別表示しません。") == 0) return L"Image: hidden while multiple entries are selected.";
+        if (std::wcscmp(japanese, L"ピン留め解除") == 0) return L"Unpin";
+        if (std::wcscmp(japanese, L"ピン留めする履歴を選択してください。") == 0) return L"Select history entries to pin.";
+        if (std::wcscmp(japanese, L"ピン留め状態を保存できませんでした。") == 0) return L"Could not save the pin state.";
+        if (std::wcscmp(japanese, L"件をピン留めしました。") == 0) return L" entries were pinned.";
+        if (std::wcscmp(japanese, L"件のピン留めを解除しました。") == 0) return L" entries were unpinned.";
+        if (std::wcscmp(japanese, L"プレビューで開く履歴を1件だけ選択してください。") == 0) return L"Select exactly one history entry to open in Preview.";
+        if (std::wcscmp(japanese, L"選択した投稿履歴を読み込めませんでした。") == 0) return L"Could not load the selected history entry.";
+        if (std::wcscmp(japanese, L"選択した投稿履歴をプレビューで開きました。") == 0) return L"The selected history entry was opened in Preview.";
+        if (std::wcscmp(japanese, L"投稿プレビューを開けませんでした。") == 0) return L"Could not open the post preview.";
+        if (std::wcscmp(japanese, L"履歴の文章をクリップボードへコピーしました。") == 0) return L"The history text was copied to the clipboard.";
+        if (std::wcscmp(japanese, L"件の文章をまとめてクリップボードへコピーしました。") == 0) return L" entries were copied to the clipboard.";
+        if (std::wcscmp(japanese, L"文章のコピーに失敗しました。") == 0) return L"Could not copy the text.";
+        if (std::wcscmp(japanese, L"画像のコピーは1件だけ選択してください。") == 0) return L"Select exactly one entry to copy its image.";
+        if (std::wcscmp(japanese, L"履歴画像が見つかりません。") == 0) return L"The history image was not found.";
+        if (std::wcscmp(japanese, L"履歴の画像をクリップボードへコピーしました。") == 0) return L"The history image was copied to the clipboard.";
+        if (std::wcscmp(japanese, L"画像のコピーに失敗しました。") == 0) return L"Could not copy the image.";
+        if (std::wcscmp(japanese, L"）。そのままXの投稿画面を開きますか？") == 0) return L"). Open the X compose page anyway?";
+        if (std::wcscmp(japanese, L"Xで再投稿する場合は1件だけ選択してください。") == 0) return L"Select exactly one entry to repost on X.";
+        if (std::wcscmp(japanese, L"X投稿画面を開く操作を中止しました。") == 0) return L"Opening the X compose page was cancelled.";
+        if (std::wcscmp(japanese, L"画像をコピーしてXの投稿画面を開きました。Ctrl＋Vで画像を貼り付けてください。") == 0) return L"The image was copied and the X compose page was opened. Press Ctrl+V to paste it.";
+        if (std::wcscmp(japanese, L"履歴の文章を入力した状態でXの投稿画面を開きました。") == 0) return L"The X compose page was opened with the history text.";
+        if (std::wcscmp(japanese, L"Xの投稿画面を開けませんでした。") == 0) return L"Could not open the X compose page.";
+        if (std::wcscmp(japanese, L"保存フォルダを開く場合は1件だけ選択してください。") == 0) return L"Select exactly one entry to open its output folder.";
+        if (std::wcscmp(japanese, L"選択した投稿履歴を削除しますか？") == 0) return L"Delete the selected history entry?";
+        if (std::wcscmp(japanese, L"件の投稿履歴を削除しますか？") == 0) return L" history entries?";
+        if (std::wcscmp(japanese, L"履歴ファイルの更新に失敗しました。") == 0) return L"Could not update the history file.";
+        if (std::wcscmp(japanese, L"選択した投稿履歴を削除しました。") == 0) return L"The selected history entry was deleted.";
+        if (std::wcscmp(japanese, L"件の投稿履歴を削除しました。") == 0) return L" history entries were deleted.";
+        if (std::wcscmp(japanese, L"バックアップ用の一時フォルダーを作成できませんでした。") == 0) return L"Could not create a temporary backup folder.";
+        if (std::wcscmp(japanese, L"バックアップ用の履歴ファイルを作成できませんでした。") == 0) return L"Could not create the history file for backup.";
+        if (std::wcscmp(japanese, L"バックアップ情報ファイルを作成できませんでした。") == 0) return L"Could not create the backup information file.";
+        if (std::wcscmp(japanese, L"履歴バックアップの作成に失敗しました。") == 0) return L"Could not create the history backup.";
+        if (std::wcscmp(japanese, L" エラーコード：") == 0) return L" Error code: ";
+        if (std::wcscmp(japanese, L"件の投稿履歴を書き出しました。") == 0) return L" history entries were exported.";
+        if (std::wcscmp(japanese, L"件の画像は元ファイルが見つからないため含まれていません。") == 0) return L" images were omitted because their source files were not found.";
+        if (std::wcscmp(japanese, L"投稿履歴のバックアップを書き出しました。") == 0) return L"The post-history backup was exported.";
+        if (std::wcscmp(japanese, L"履歴をどのように読み込みますか？\\r\\n\\r\\n") == 0) return L"How would you like to import the history?\\r\\n\\r\\n";
+        if (std::wcscmp(japanese, L"［はい］現在の履歴に追加\\r\\n") == 0) return L"[Yes] Add to current history\\r\\n";
+        if (std::wcscmp(japanese, L"［いいえ］現在の履歴を置き換え\\r\\n") == 0) return L"[No] Replace current history\\r\\n";
+        if (std::wcscmp(japanese, L"［キャンセル］読み込みを中止") == 0) return L"[Cancel] Cancel import";
+        if (std::wcscmp(japanese, L"読み込み用の一時フォルダーを作成できませんでした。") == 0) return L"Could not create a temporary import folder.";
+        if (std::wcscmp(japanese, L"履歴バックアップを展開できませんでした。") == 0) return L"Could not extract the history backup.";
+        if (std::wcscmp(japanese, L"バックアップ内に履歴ファイルがありません。") == 0) return L"The backup does not contain a history file.";
+        if (std::wcscmp(japanese, L"読み込んだ履歴を保存できませんでした。") == 0) return L"Could not save the imported history.";
+        if (std::wcscmp(japanese, L"投稿履歴を追加しました。") == 0) return L"Post history was added.";
+        if (std::wcscmp(japanese, L"投稿履歴を置き換えました。") == 0) return L"Post history was replaced.";
+        if (std::wcscmp(japanese, L"投稿履歴のバックアップを読み込みました。") == 0) return L"The post-history backup was imported.";
+        if (std::wcscmp(japanese, L"すべての投稿履歴を削除しますか？") == 0) return L"Delete all post history?";
+        if (std::wcscmp(japanese, L"投稿履歴をすべて削除しました。") == 0) return L"All post history was deleted.";
+        if (std::wcscmp(japanese, L"NowPlaying投稿プレビュー") == 0) return L"NowPlaying Post Preview";
+        if (std::wcscmp(japanese, L"テンプレート") == 0) return L"Template";
+        if (std::wcscmp(japanese, L"使用テンプレート") == 0) return L"Selected Template";
+        if (std::wcscmp(japanese, L"投稿文（その場で編集できます）") == 0) return L"Post text (editable)";
+        if (std::wcscmp(japanese, L"Xで投稿") == 0) return L"Post on X";
+        if (std::wcscmp(japanese, L"コピーして閉じる") == 0) return L"Copy and Close";
+        if (std::wcscmp(japanese, L"文章を確認・編集してからコピーしてください。") == 0) return L"Review or edit the text before copying.";
+        if (std::wcscmp(japanese, L"アートワーク：") == 0) return L"Artwork: ";
+        if (std::wcscmp(japanese, L"あり") == 0) return L"Available";
+        if (std::wcscmp(japanese, L"アートワークなし") == 0) return L"No artwork";
+        if (std::wcscmp(japanese, L"履歴から開いた投稿文ではテンプレートを切り替えられません。") == 0) return L"Templates cannot be switched for a post opened from history.";
+        if (std::wcscmp(japanese, L"テンプレートを切り替えました。編集内容は新しい書式で置き換わりました。") == 0) return L"The template was changed. Your edits were replaced by the new format.";
+        if (std::wcscmp(japanese, L"文字数：") == 0) return L"Characters: ";
+        if (std::wcscmp(japanese, L"　X換算目安：") == 0) return L"  X estimate: ";
+        if (std::wcscmp(japanese, L"（超過）") == 0) return L" (over limit)";
+        if (std::wcscmp(japanese, L"コピーできるアートワークがありません。") == 0) return L"There is no artwork to copy.";
+        if (std::wcscmp(japanese, L"画像のクリップボードコピーに失敗しました。") == 0) return L"Could not copy the image to the clipboard.";
+        if (std::wcscmp(japanese, L"画像をコピーし、Xの投稿画面を開きました。投稿画面でCtrl＋Vを押してください。") == 0) return L"The image was copied and the X compose page was opened. Press Ctrl+V in the compose page.";
+        if (std::wcscmp(japanese, L"文章を入力した状態でXの投稿画面を開きました。") == 0) return L"The X compose page was opened with the post text.";
+        if (std::wcscmp(japanese, L" 投稿履歴へ保存しました。") == 0) return L" Saved to post history.";
+        if (std::wcscmp(japanese, L" 投稿履歴の保存には失敗しました。") == 0) return L" Could not save post history.";
+        if (std::wcscmp(japanese, L" nowplaying.txtの保存には失敗しました。") == 0) return L" Could not save nowplaying.txt.";
+        if (std::wcscmp(japanese, L"画像をクリップボードへコピーしました。文章を貼り付けた後に画像を貼り付けてください。") == 0) return L"The image was copied to the clipboard. Paste it after pasting the text.";
+        if (std::wcscmp(japanese, L"画像をクリップボードへコピーしました。") == 0) return L"The image was copied to the clipboard.";
+        if (std::wcscmp(japanese, L"文章をクリップボードへコピーしました。") == 0) return L"The text was copied to the clipboard.";
+        if (std::wcscmp(japanese, L"クリップボードへのコピーに失敗しました。") == 0) return L"Could not copy to the clipboard.";
+        if (std::wcscmp(japanese, L" nowplaying.txtも更新しました。") == 0) return L" nowplaying.txt was also updated.";
+        if (std::wcscmp(japanese, L" nowplaying.txtの保存に失敗しました。") == 0) return L" Could not save nowplaying.txt.";
+        if (std::wcscmp(japanese, L"投稿履歴を読み込みました。文章を編集して再利用できます。") == 0) return L"The history entry was loaded. You can edit and reuse the text.";
+        if (std::wcscmp(japanese, L"（テンプレート不明・履歴）") == 0) return L"(Unknown template / history)";
+        if (std::wcscmp(japanese, L"（履歴）") == 0) return L"(History)";
+        if (std::wcscmp(japanese, L"投稿履歴の保存画像") == 0) return L"Saved history image";
+        if (std::wcscmp(japanese, L"履歴画像") == 0) return L"History image";
+        if (std::wcscmp(japanese, L"履歴画像が見つかりません") == 0) return L"History image not found";
+        if (std::wcscmp(japanese, L"現在再生中の曲がありません。") == 0) return L"No track is currently playing.";
+        if (std::wcscmp(japanese, L"シンプル") == 0) return L"Simple";
+        if (std::wcscmp(japanese, L"埋め込みフロントカバー") == 0) return L"Embedded front cover";
+        if (std::wcscmp(japanese, L"ZIP内画像") == 0) return L"Image in ZIP";
+        if (std::wcscmp(japanese, L"同じフォルダの画像") == 0) return L"Image in the same folder";
+        if (std::wcscmp(japanese, L"元画像") == 0) return L"Source image";
+        if (std::wcscmp(japanese, L"最適化：オフ\\r\\n") == 0) return L"Optimization: Off\\r\\n";
+        if (std::wcscmp(japanese, L"NowPlaying文をクリップボードへコピーしました。") == 0) return L"The NowPlaying text was copied to the clipboard.";
+        if (std::wcscmp(japanese, L"アートワークは見つかりませんでした。") == 0) return L"No artwork was found.";
+        if (std::wcscmp(japanese, L"診断ログ：") == 0) return L"Diagnostic log:";
+        if (std::wcscmp(japanese, L"NowPlaying Copy & Artwork ヘルプ") == 0) return L"NowPlaying Copy & Artwork Help";
+        if (std::wcscmp(japanese, L"ヘルプ内容をクリップボードへコピーしました。") == 0) return L"The help text was copied to the clipboard.";
+        if (std::wcscmp(japanese, L"ヘルプ内容をコピーできませんでした。") == 0) return L"Could not copy the help text.";
+        if (std::wcscmp(japanese, L"基本操作からバックアップ方法まで確認できます。") == 0) return L"Covers basic operation, history, and backups.";
+        if (std::wcscmp(japanese, L"内容をコピー") == 0) return L"Copy Contents";
+        if (std::wcscmp(japanese, L"設定ファイルを開けませんでした。") == 0) return L"Could not open the settings file.";
+        if (std::wcscmp(japanese, L"設定ファイルのサイズが不正です。") == 0) return L"The settings file has an invalid size.";
+        if (std::wcscmp(japanese, L"NowPlaying Copy & Artworkの設定ファイルではありません。") == 0) return L"This is not a NowPlaying Copy & Artwork settings file.";
+        if (std::wcscmp(japanese, L"編集するテンプレート") == 0) return L"Template";
+        if (std::wcscmp(japanese, L"追加") == 0) return L"Add";
+        if (std::wcscmp(japanese, L"複製") == 0) return L"Duplicate";
+        if (std::wcscmp(japanese, L"削除") == 0) return L"Delete";
+        if (std::wcscmp(japanese, L"初期化") == 0) return L"Reset";
+        if (std::wcscmp(japanese, L"テンプレート名") == 0) return L"Template Name";
+        if (std::wcscmp(japanese, L"投稿文の書式") == 0) return L"Post Format";
+        if (std::wcscmp(japanese, L"使用例：%title%  %artist%  %album%  %date%  %tracknumber%  %length%") == 0) return L"Examples: %title%  %artist%  %album%  %date%  %tracknumber%  %length%";
+        if (std::wcscmp(japanese, L"保存先フォルダ") == 0) return L"Output Folder";
+        if (std::wcscmp(japanese, L"参照...") == 0) return L"Browse...";
+        if (std::wcscmp(japanese, L"投稿前にプレビュー画面を表示する") == 0) return L"Show preview before posting";
+        if (std::wcscmp(japanese, L"nowplaying.txtを保存する") == 0) return L"Save nowplaying.txt";
+        if (std::wcscmp(japanese, L"アートワークを保存する") == 0) return L"Save artwork";
+        if (std::wcscmp(japanese, L"ZIP内のcover／folder／front画像を検索する") == 0) return L"Search cover/folder/front images in ZIP files";
+        if (std::wcscmp(japanese, L"処理完了メッセージを表示する") == 0) return L"Show completion message";
+        if (std::wcscmp(japanese, L"投稿用アートワークを最適化する") == 0) return L"Optimize artwork for posting";
+        if (std::wcscmp(japanese, L"最大サイズ(px)") == 0) return L"Max size (px)";
+        if (std::wcscmp(japanese, L"形式") == 0) return L"Format";
+        if (std::wcscmp(japanese, L"JPEG画質") == 0) return L"Quality";
+        if (std::wcscmp(japanese, L"画像処理") == 0) return L"Image mode";
+        if (std::wcscmp(japanese, L"履歴保存上限") == 0) return L"Save limit";
+        if (std::wcscmp(japanese, L"件（10～1000）") == 0) return L"(10–1000)";
+        if (std::wcscmp(japanese, L"履歴表示上限") == 0) return L"Display limit";
+        if (std::wcscmp(japanese, L"すべて表示") == 0) return L"Show all";
+        if (std::wcscmp(japanese, L"最新50件") == 0) return L"Latest 50";
+        if (std::wcscmp(japanese, L"最新100件") == 0) return L"Latest 100";
+        if (std::wcscmp(japanese, L"最新200件") == 0) return L"Latest 200";
+        if (std::wcscmp(japanese, L"最新500件") == 0) return L"Latest 500";
+        if (std::wcscmp(japanese, L"設定を書き出す...") == 0) return L"Export settings...";
+        if (std::wcscmp(japanese, L"設定を読み込む...") == 0) return L"Import settings...";
+        if (std::wcscmp(japanese, L"ヘルプ") == 0) return L"Help";
+        if (std::wcscmp(japanese, L"テンプレートを初期状態の5個へ戻しますか？") == 0) return L"Reset templates to the five defaults?";
+        if (std::wcscmp(japanese, L"テンプレートは最大20個です。") == 0) return L"A maximum of 20 templates is allowed.";
+        if (std::wcscmp(japanese, L" のコピー") == 0) return L" Copy";
+        if (std::wcscmp(japanese, L"テンプレートは最低1個必要です。") == 0) return L"At least one template is required.";
+        if (std::wcscmp(japanese, L"」を削除しますか？") == 0) return L"\"?";
+        if (std::wcscmp(japanese, L"設定ファイルを書き出せませんでした。") == 0) return L"Could not export the settings file.";
+        if (std::wcscmp(japanese, L"設定を書き出しました。\\r\\n\\r\\n") == 0) return L"Settings were exported.\\r\\n\\r\\n";
+        if (std::wcscmp(japanese, L"対応していない設定ファイルのバージョンです。") == 0) return L"This settings-file version is not supported.";
+        if (std::wcscmp(japanese, L"設定を読み込みました。\\r\\n\\r\\n") == 0) return L"Settings were imported.\\r\\n\\r\\n";
+        if (std::wcscmp(japanese, L"［適用］または［OK］を押すと保存されます。") == 0) return L"Press [Apply] or [OK] to save.";
+        if (std::wcscmp(japanese, L"NowPlayingの保存先フォルダを選択してください。") == 0) return L"Select the NowPlaying output folder.";
+        if (std::wcscmp(japanese, L"改行タイプ") == 0) return L"Multiline";
+        if (std::wcscmp(japanese, L"アルバム情報") == 0) return L"Album Info";
+        if (std::wcscmp(japanese, L"引用タイプ") == 0) return L"Quote";
+        if (std::wcscmp(japanese, L"自由設定") == 0) return L"Custom";
+        return japanese;
+    }
+
+    const char* ui_text_utf8(const char* japanese, const char* english) {
+        return ui_uses_english() ? english : japanese;
+    }
+
+    int configured_ui_language_index() {
+        const pfc::string8 configured = g_cfg_ui_language.get();
+        if (std::strcmp(configured.c_str(), "ja") == 0) return 1;
+        if (std::strcmp(configured.c_str(), "en") == 0) return 2;
+        return 0;
+    }
 
     std::wstring utf8_to_wide(const char* value) {
         if (value == nullptr || *value == 0) return {};
@@ -202,7 +430,7 @@ namespace {
     }
 
     const wchar_t* artwork_square_mode_label(int mode) {
-        return mode == 1 ? L"中央を正方形に切り抜く" : L"そのまま縮小";
+        return mode == 1 ? ui_text(L"中央を正方形に切り抜く") : ui_text(L"そのまま縮小");
     }
 
     std::wstring format_file_size(uintmax_t bytes) {
@@ -254,7 +482,7 @@ namespace {
             result += L" × ";
             result += std::to_wstring(dims.height);
         } else {
-            result += L"解像度不明";
+            result += ui_text(L"解像度不明");
         }
 
         std::error_code ec;
@@ -277,6 +505,15 @@ namespace {
     }
 
     const char* default_template_name(size_t index) {
+        if (ui_uses_english()) {
+            switch (index) {
+            case 0: return "Simple";
+            case 1: return "Multiline";
+            case 2: return "Album Info";
+            case 3: return "Quote";
+            default: return "Custom";
+            }
+        }
         switch (index) {
         case 0: return "シンプル";
         case 1: return "改行タイプ";
@@ -291,7 +528,10 @@ namespace {
         case 0: return default_post_format;
         case 1: return "♪ %title%\r\n%artist%\r\n\r\n#NowPlaying";
         case 2: return "🎧 %title%\r\nArtist：%artist%\r\nAlbum：%album%\r\n\r\n#NowPlaying";
-        case 3: return "%artist%「%title%」を再生中🎧\r\n\r\n#NowPlaying";
+        case 3:
+            return ui_uses_english()
+                ? "Now playing %artist% - %title% 🎧\r\n\r\n#NowPlaying"
+                : "%artist%「%title%」を再生中🎧\r\n\r\n#NowPlaying";
         default: return default_post_format;
         }
     }
@@ -459,7 +699,7 @@ namespace {
                 return false;
             }
             if (item.name.empty()) {
-                item.name = L"テンプレート " +
+                item.name = ui_text(L"テンプレート ") +
                     std::to_wstring(templates.size() + 1);
             }
             if (item.format.empty()) {
@@ -517,7 +757,7 @@ namespace {
         }
         for (size_t index = 0; index < templates.size(); ++index) {
             if (templates[index].name.empty()) {
-                templates[index].name = L"テンプレート " +
+                templates[index].name = ui_text(L"テンプレート ") +
                     std::to_wstring(index + 1);
             }
             if (templates[index].format.empty()) {
@@ -814,7 +1054,7 @@ namespace {
                 extractor->query(album_art_ids::cover_front, abort);
 
             if (data.is_empty() || data->get_ptr() == nullptr || data->get_size() == 0) {
-                errorText = L"埋め込みフロントカバーのデータが空でした。";
+                errorText = ui_text(L"埋め込みフロントカバーのデータが空でした。");
                 return false;
             }
 
@@ -828,21 +1068,21 @@ namespace {
                     exported,
                     data->get_ptr(),
                     static_cast<size_t>(data->get_size()))) {
-                errorText = L"埋め込み画像をファイルへ保存できませんでした。";
+                errorText = ui_text(L"埋め込み画像をファイルへ保存できませんでした。");
                 return false;
             }
 
             return true;
         }
         catch (const exception_album_art_not_found&) {
-            errorText = L"埋め込みフロントカバーはありません。";
+            errorText = ui_text(L"埋め込みフロントカバーはありません。");
         }
         catch (const std::exception& e) {
-            errorText = L"埋め込み画像の取得エラー：";
+            errorText = ui_text(L"埋め込み画像の取得エラー：");
             errorText += utf8_to_wide(e.what());
         }
         catch (...) {
-            errorText = L"埋め込み画像の取得中に不明なエラーが発生しました。";
+            errorText = ui_text(L"埋め込み画像の取得中に不明なエラーが発生しました。");
         }
         return false;
     }
@@ -1094,7 +1334,7 @@ namespace {
         std::ifstream file(manifestPath, std::ios::binary);
         if (!file) {
             errorText =
-                L"バックアップ情報ファイルが見つかりません。";
+                ui_text(L"バックアップ情報ファイルが見つかりません。");
             return false;
         }
 
@@ -1103,7 +1343,7 @@ namespace {
             std::istreambuf_iterator<char>());
         if (content.size() > 65536) {
             errorText =
-                L"バックアップ情報ファイルのサイズが不正です。";
+                ui_text(L"バックアップ情報ファイルのサイズが不正です。");
             return false;
         }
         if (content.size() >= 3 &&
@@ -1117,12 +1357,12 @@ namespace {
                 "FileType=NowPlaying Copy & Artwork History Backup") ==
                 std::string::npos) {
             errorText =
-                L"NowPlaying投稿履歴のバックアップではありません。";
+                ui_text(L"NowPlaying投稿履歴のバックアップではありません。");
             return false;
         }
         if (content.find("Version=1") == std::string::npos) {
             errorText =
-                L"対応していない履歴バックアップのバージョンです。";
+                ui_text(L"対応していない履歴バックアップのバージョンです。");
             return false;
         }
         return true;
@@ -1414,7 +1654,7 @@ namespace {
             // The encoder stream is still open here. Reopening artwork-post
             // through WIC can therefore fail with a sharing violation.
             // Use the dimensions already confirmed during encoding instead.
-            detailText = L"元画像：";
+            detailText = ui_text(L"元画像：");
             detailText += std::to_wstring(srcWidth);
             detailText += L" × ";
             detailText += std::to_wstring(srcHeight);
@@ -1858,8 +2098,8 @@ namespace {
     std::wstring configured_history_display_limit_label() {
         const int limit = configured_history_display_limit();
         return limit == 0
-            ? L"すべて"
-            : std::to_wstring(limit) + L"件";
+            ? ui_text(L"すべて")
+            : std::to_wstring(limit) + ui_text(L"件");
     }
 
     fs::path history_file_path(const fs::path& outputDirectory) {
@@ -2303,7 +2543,7 @@ namespace {
             m_wnd = CreateWindowExW(
                 WS_EX_DLGMODALFRAME,
                 window_class_name(),
-                L"NowPlaying投稿履歴",
+                ui_text(L"NowPlaying投稿履歴"),
                 WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU |
                     WS_MINIMIZEBOX | WS_THICKFRAME,
                 x, y, width, height,
@@ -2395,7 +2635,7 @@ namespace {
                 if (id == IDC_HISTORY_RELOAD &&
                     notification == BN_CLICKED) {
                     reload_records();
-                    set_status(L"投稿履歴を再読み込みしました。");
+                    set_status(ui_text(L"投稿履歴を再読み込みしました。"));
                     return 0;
                 }
                 if (id == IDC_HISTORY_EXPORT &&
@@ -2502,7 +2742,7 @@ namespace {
             m_listLabel = create_control(
                 0,
                 L"STATIC",
-                L"投稿履歴",
+                ui_text(L"投稿履歴"),
                 0,
                 0);
             m_searchEdit = create_control(
@@ -2516,17 +2756,17 @@ namespace {
                 EM_SETCUEBANNER,
                 TRUE,
                 reinterpret_cast<LPARAM>(
-                    L"曲名・アーティスト・投稿文などを検索"));
+                    ui_text(L"曲名・アーティスト・投稿文などを検索")));
             m_reloadButton = create_control(
                 0,
                 L"BUTTON",
-                L"再読込",
+                ui_text(L"再読込"),
                 WS_TABSTOP | BS_PUSHBUTTON,
                 IDC_HISTORY_RELOAD);
             m_pinnedOnlyCheck = create_control(
                 0,
                 L"BUTTON",
-                L"★ ピン留めのみ表示",
+                ui_text(L"★ ピン留めのみ表示"),
                 WS_TABSTOP | BS_AUTOCHECKBOX,
                 IDC_HISTORY_PINNED_ONLY);
             m_list = create_control(
@@ -2539,26 +2779,26 @@ namespace {
             m_exportHistoryButton = create_control(
                 0,
                 L"BUTTON",
-                L"履歴を書き出す...",
+                ui_text(L"履歴を書き出す..."),
                 WS_TABSTOP | BS_PUSHBUTTON,
                 IDC_HISTORY_EXPORT);
             m_importHistoryButton = create_control(
                 0,
                 L"BUTTON",
-                L"履歴を読み込む...",
+                ui_text(L"履歴を読み込む..."),
                 WS_TABSTOP | BS_PUSHBUTTON,
                 IDC_HISTORY_IMPORT);
 
             m_detailLabel = create_control(
                 0,
                 L"STATIC",
-                L"選択した履歴（Ctrl／Shiftで複数選択）",
+                ui_text(L"選択した履歴（Ctrl／Shiftで複数選択）"),
                 0,
                 0);
             m_previewButton = create_control(
                 0,
                 L"BUTTON",
-                L"プレビューで開く",
+                ui_text(L"プレビューで開く"),
                 WS_TABSTOP | BS_PUSHBUTTON,
                 IDC_HISTORY_PREVIEW);
             m_metadataLabel = create_control(
@@ -2584,55 +2824,55 @@ namespace {
             m_copyTextButton = create_control(
                 0,
                 L"BUTTON",
-                L"文章をコピー",
+                ui_text(L"文章をコピー"),
                 WS_TABSTOP | BS_PUSHBUTTON,
                 IDC_HISTORY_COPY_TEXT);
             m_copyImageButton = create_control(
                 0,
                 L"BUTTON",
-                L"画像をコピー",
+                ui_text(L"画像をコピー"),
                 WS_TABSTOP | BS_PUSHBUTTON,
                 IDC_HISTORY_COPY_IMAGE);
             m_openXButton = create_control(
                 0,
                 L"BUTTON",
-                L"Xで再投稿",
+                ui_text(L"Xで再投稿"),
                 WS_TABSTOP | BS_PUSHBUTTON,
                 IDC_HISTORY_OPEN_X);
             m_copyImageOpenXButton = create_control(
                 0,
                 L"BUTTON",
-                L"画像をコピーしてXを開く",
+                ui_text(L"画像をコピーしてXを開く"),
                 WS_TABSTOP | BS_PUSHBUTTON,
                 IDC_HISTORY_COPY_IMAGE_OPEN_X);
             m_openFolderButton = create_control(
                 0,
                 L"BUTTON",
-                L"保存フォルダを開く",
+                ui_text(L"保存フォルダを開く"),
                 WS_TABSTOP | BS_PUSHBUTTON,
                 IDC_HISTORY_OPEN_FOLDER);
             m_pinButton = create_control(
                 0,
                 L"BUTTON",
-                L"ピン留め",
+                ui_text(L"ピン留め"),
                 WS_TABSTOP | BS_PUSHBUTTON,
                 IDC_HISTORY_PIN);
             m_deleteButton = create_control(
                 0,
                 L"BUTTON",
-                L"選択履歴を削除",
+                ui_text(L"選択履歴を削除"),
                 WS_TABSTOP | BS_PUSHBUTTON,
                 IDC_HISTORY_DELETE);
             m_clearButton = create_control(
                 0,
                 L"BUTTON",
-                L"すべて削除",
+                ui_text(L"すべて削除"),
                 WS_TABSTOP | BS_PUSHBUTTON,
                 IDC_HISTORY_CLEAR);
             m_closeButton = create_control(
                 0,
                 L"BUTTON",
-                L"閉じる",
+                ui_text(L"閉じる"),
                 WS_TABSTOP | BS_PUSHBUTTON,
                 IDC_HISTORY_CLOSE);
             m_statusLabel = create_control(
@@ -2896,7 +3136,7 @@ namespace {
                     label += L" - ";
                 }
                 label += record.title.empty()
-                    ? L"（タイトル不明）"
+                    ? ui_text(L"（タイトル不明）")
                     : record.title;
 
                 SendMessageW(
@@ -3033,10 +3273,10 @@ namespace {
                 SetWindowTextW(
                     m_metadataLabel,
                     m_records.empty()
-                        ? L"投稿履歴はまだありません。"
+                        ? ui_text(L"投稿履歴はまだありません。")
                         : (m_visibleIndices.empty()
-                            ? L"検索条件に一致する履歴はありません。"
-                            : L"履歴を選択してください。"));
+                            ? ui_text(L"検索条件に一致する履歴はありません。")
+                            : ui_text(L"履歴を選択してください。")));
                 SetWindowTextW(m_textEdit, L"");
                 SetWindowTextW(m_pathLabel, L"");
             } else if (selectionCount == 1) {
@@ -3044,14 +3284,14 @@ namespace {
                     m_records[static_cast<size_t>(selectedIndices.front())];
 
                 std::wstring metadata =
-                    L"日時：" + record.timestamp;
+                    ui_text(L"日時：") + record.timestamp;
                 metadata += L"\r\nテンプレート：";
                 metadata += record.templateName.empty()
-                    ? L"（不明）"
+                    ? ui_text(L"（不明）")
                     : record.templateName;
                 metadata += record.pinned
-                    ? L"　★ピン留め中"
-                    : L"　ピン留めなし";
+                    ? ui_text(L"　★ピン留め中")
+                    : ui_text(L"　ピン留めなし");
                 SetWindowTextW(
                     m_metadataLabel,
                     metadata.c_str());
@@ -3059,16 +3299,16 @@ namespace {
                     m_textEdit,
                     record.text.c_str());
 
-                std::wstring pathText = L"画像：";
+                std::wstring pathText = ui_text(L"画像：");
                 if (record.artworkPath.empty()) {
-                    pathText += L"なし";
+                    pathText += ui_text(L"なし");
                 } else {
                     pathText += record.artworkPath.wstring();
                     std::error_code artworkError;
                     if (!fs::is_regular_file(
                             record.artworkPath,
                             artworkError)) {
-                        pathText += L"（ファイルが見つかりません）";
+                        pathText += ui_text(L"（ファイルが見つかりません）");
                     }
                 }
                 SetWindowTextW(
@@ -3092,7 +3332,7 @@ namespace {
                 metadata +=
                     std::to_wstring(selectedPinnedCount);
                 metadata += L"件）\r\n";
-                metadata += L"文章コピー・ピン留め・削除を一括操作できます。";
+                metadata += ui_text(L"文章コピー・ピン留め・削除を一括操作できます。");
                 SetWindowTextW(
                     m_metadataLabel,
                     metadata.c_str());
@@ -3112,7 +3352,7 @@ namespace {
                     combinedText.c_str());
                 SetWindowTextW(
                     m_pathLabel,
-                    L"画像：複数選択中のため個別表示しません。");
+                    ui_text(L"画像：複数選択中のため個別表示しません。"));
             }
 
             const BOOL anySelected = selected ? TRUE : FALSE;
@@ -3138,8 +3378,8 @@ namespace {
             SetWindowTextW(
                 m_pinButton,
                 allSelectedPinned
-                    ? L"ピン留め解除"
-                    : L"ピン留め");
+                    ? ui_text(L"ピン留め解除")
+                    : ui_text(L"ピン留め"));
             EnableWindow(m_openXButton, singleSelected);
             EnableWindow(m_openFolderButton, singleSelected);
 
@@ -3170,7 +3410,7 @@ namespace {
             const auto selected = selected_indices();
             if (selected.empty()) {
                 set_status(
-                    L"ピン留めする履歴を選択してください。");
+                    ui_text(L"ピン留めする履歴を選択してください。"));
                 return;
             }
 
@@ -3206,7 +3446,7 @@ namespace {
                     m_outputDirectory,
                     updatedRecords)) {
                 set_status(
-                    L"ピン留め状態を保存できませんでした。");
+                    ui_text(L"ピン留め状態を保存できませんでした。"));
                 return;
             }
 
@@ -3219,8 +3459,8 @@ namespace {
             std::wstring status =
                 std::to_wstring(selected.size());
             status += newPinnedState
-                ? L"件をピン留めしました。"
-                : L"件のピン留めを解除しました。";
+                ? ui_text(L"件をピン留めしました。")
+                : ui_text(L"件のピン留めを解除しました。");
             set_status(status);
         }
 
@@ -3228,7 +3468,7 @@ namespace {
             const auto selected = selected_indices();
             if (selected.size() != 1) {
                 set_status(
-                    L"プレビューで開く履歴を1件だけ選択してください。");
+                    ui_text(L"プレビューで開く履歴を1件だけ選択してください。"));
                 return;
             }
 
@@ -3237,7 +3477,7 @@ namespace {
                 static_cast<size_t>(index) >=
                     m_records.size()) {
                 set_status(
-                    L"選択した投稿履歴を読み込めませんでした。");
+                    ui_text(L"選択した投稿履歴を読み込めませんでした。"));
                 return;
             }
 
@@ -3245,10 +3485,10 @@ namespace {
                     m_records[static_cast<size_t>(index)],
                     m_outputDirectory)) {
                 set_status(
-                    L"選択した投稿履歴をプレビューで開きました。");
+                    ui_text(L"選択した投稿履歴をプレビューで開きました。"));
             } else {
                 set_status(
-                    L"投稿プレビューを開けませんでした。");
+                    ui_text(L"投稿プレビューを開けませんでした。"));
             }
         }
 
@@ -3274,16 +3514,16 @@ namespace {
             set_status(
                 ok
                     ? (selected.size() == 1
-                        ? L"履歴の文章をクリップボードへコピーしました。"
+                        ? ui_text(L"履歴の文章をクリップボードへコピーしました。")
                         : (std::to_wstring(selected.size()) +
-                            L"件の文章をまとめてクリップボードへコピーしました。"))
-                    : L"文章のコピーに失敗しました。");
+                            ui_text(L"件の文章をまとめてクリップボードへコピーしました。")))
+                    : ui_text(L"文章のコピーに失敗しました。"));
         }
 
         void copy_selected_image() {
             const auto selected = selected_indices();
             if (selected.size() != 1) {
-                set_status(L"画像のコピーは1件だけ選択してください。");
+                set_status(ui_text(L"画像のコピーは1件だけ選択してください。"));
                 return;
             }
             const int index = selected.front();
@@ -3295,7 +3535,7 @@ namespace {
             if (path.empty() ||
                 !fs::is_regular_file(path, ec)) {
                 set_status(
-                    L"履歴画像が見つかりません。");
+                    ui_text(L"履歴画像が見つかりません。"));
                 return;
             }
 
@@ -3303,8 +3543,8 @@ namespace {
                 copy_artwork_to_clipboard(path, m_wnd);
             set_status(
                 ok
-                    ? L"履歴の画像をクリップボードへコピーしました。"
-                    : L"画像のコピーに失敗しました。");
+                    ? ui_text(L"履歴の画像をクリップボードへコピーしました。")
+                    : ui_text(L"画像のコピーに失敗しました。"));
         }
 
         bool confirm_x_length(const std::wstring& text) {
@@ -3314,7 +3554,7 @@ namespace {
             const std::wstring warning =
                 L"X換算の目安が280を超えています（" +
                 std::to_wstring(weighted) +
-                L"）。そのままXの投稿画面を開きますか？";
+                ui_text(L"）。そのままXの投稿画面を開きますか？");
 
             return MessageBoxW(
                 m_wnd,
@@ -3326,7 +3566,7 @@ namespace {
         void open_selected_in_x(bool copyImageFirst) {
             const auto selected = selected_indices();
             if (selected.size() != 1) {
-                set_status(L"Xで再投稿する場合は1件だけ選択してください。");
+                set_status(ui_text(L"Xで再投稿する場合は1件だけ選択してください。"));
                 return;
             }
             const int index = selected.front();
@@ -3334,7 +3574,7 @@ namespace {
             const std::wstring text =
                 get_window_text_string(m_textEdit);
             if (!confirm_x_length(text)) {
-                set_status(L"X投稿画面を開く操作を中止しました。");
+                set_status(ui_text(L"X投稿画面を開く操作を中止しました。"));
                 return;
             }
 
@@ -3346,14 +3586,14 @@ namespace {
                 if (path.empty() ||
                     !fs::is_regular_file(path, ec)) {
                     set_status(
-                        L"履歴画像が見つかりません。");
+                        ui_text(L"履歴画像が見つかりません。"));
                     return;
                 }
                 if (!copy_artwork_to_clipboard(
                         path,
                         m_wnd)) {
                     set_status(
-                        L"画像のコピーに失敗しました。");
+                        ui_text(L"画像のコピーに失敗しました。"));
                     return;
                 }
             }
@@ -3374,15 +3614,15 @@ namespace {
             set_status(
                 opened
                     ? (copyImageFirst
-                        ? L"画像をコピーしてXの投稿画面を開きました。Ctrl＋Vで画像を貼り付けてください。"
-                        : L"履歴の文章を入力した状態でXの投稿画面を開きました。")
-                    : L"Xの投稿画面を開けませんでした。");
+                        ? ui_text(L"画像をコピーしてXの投稿画面を開きました。Ctrl＋Vで画像を貼り付けてください。")
+                        : ui_text(L"履歴の文章を入力した状態でXの投稿画面を開きました。"))
+                    : ui_text(L"Xの投稿画面を開けませんでした。"));
         }
 
         void open_selected_folder() {
             const auto selected = selected_indices();
             if (selected.size() != 1) {
-                set_status(L"保存フォルダを開く場合は1件だけ選択してください。");
+                set_status(ui_text(L"保存フォルダを開く場合は1件だけ選択してください。"));
                 return;
             }
             const int index = selected.front();
@@ -3410,9 +3650,9 @@ namespace {
 
             const std::wstring confirmText =
                 selected.size() == 1
-                    ? L"選択した投稿履歴を削除しますか？"
+                    ? ui_text(L"選択した投稿履歴を削除しますか？")
                     : (std::to_wstring(selected.size()) +
-                        L"件の投稿履歴を削除しますか？");
+                        ui_text(L"件の投稿履歴を削除しますか？"));
 
             if (MessageBoxW(
                     m_wnd,
@@ -3474,16 +3714,16 @@ namespace {
             if (!write_history_records(
                     m_outputDirectory,
                     m_records)) {
-                set_status(L"履歴ファイルの更新に失敗しました。");
+                set_status(ui_text(L"履歴ファイルの更新に失敗しました。"));
                 return;
             }
 
             rebuild_history_list();
             set_status(
                 selected.size() == 1
-                    ? L"選択した投稿履歴を削除しました。"
+                    ? ui_text(L"選択した投稿履歴を削除しました。")
                     : (std::to_wstring(selected.size()) +
-                        L"件の投稿履歴を削除しました。"));
+                        ui_text(L"件の投稿履歴を削除しました。")));
         }
 
         bool choose_history_backup_file(
@@ -3664,7 +3904,7 @@ namespace {
                 create_unique_temp_directory(L"nph");
             if (stagingDirectory.empty()) {
                 set_status(
-                    L"バックアップ用の一時フォルダーを作成できませんでした。");
+                    ui_text(L"バックアップ用の一時フォルダーを作成できませんでした。"));
                 return;
             }
 
@@ -3697,7 +3937,7 @@ namespace {
                     portableRecords)) {
                 fs::remove_all(stagingDirectory, ec);
                 set_status(
-                    L"バックアップ用の履歴ファイルを作成できませんでした。");
+                    ui_text(L"バックアップ用の履歴ファイルを作成できませんでした。"));
                 return;
             }
 
@@ -3724,7 +3964,7 @@ namespace {
                     manifest.str())) {
                 fs::remove_all(stagingDirectory, ec);
                 set_status(
-                    L"バックアップ情報ファイルを作成できませんでした。");
+                    ui_text(L"バックアップ情報ファイルを作成できませんでした。"));
                 return;
             }
 
@@ -3738,8 +3978,8 @@ namespace {
 
             if (!created) {
                 std::wstring error =
-                    L"履歴バックアップの作成に失敗しました。";
-                error += L" エラーコード：";
+                    ui_text(L"履歴バックアップの作成に失敗しました。");
+                error += ui_text(L" エラーコード：");
                 error += std::to_wstring(exitCode);
                 set_status(error);
                 return;
@@ -3748,13 +3988,13 @@ namespace {
             std::wstring message =
                 std::to_wstring(portableRecords.size());
             message +=
-                L"件の投稿履歴を書き出しました。";
+                ui_text(L"件の投稿履歴を書き出しました。");
             if (missingArtworkCount > 0) {
                 message += L"\r\n";
                 message +=
                     std::to_wstring(missingArtworkCount);
                 message +=
-                    L"件の画像は元ファイルが見つからないため含まれていません。";
+                    ui_text(L"件の画像は元ファイルが見つからないため含まれていません。");
             }
             message += L"\r\n\r\n";
             message += destinationZip.wstring();
@@ -3765,7 +4005,7 @@ namespace {
                 L"NowPlaying Copy & Artwork",
                 MB_OK | MB_ICONINFORMATION);
             set_status(
-                L"投稿履歴のバックアップを書き出しました。");
+                ui_text(L"投稿履歴のバックアップを書き出しました。"));
         }
 
         void import_history_backup() {
@@ -3778,10 +4018,15 @@ namespace {
 
             const int importMode = MessageBoxW(
                 m_wnd,
-                L"履歴をどのように読み込みますか？\r\n\r\n"
-                L"［はい］現在の履歴に追加\r\n"
-                L"［いいえ］現在の履歴を置き換え\r\n"
-                L"［キャンセル］読み込みを中止",
+                ui_uses_english()
+                    ? L"How would you like to import the history?\r\n\r\n"
+                      L"[Yes] Add to current history\r\n"
+                      L"[No] Replace current history\r\n"
+                      L"[Cancel] Cancel import"
+                    : L"履歴をどのように読み込みますか？\r\n\r\n"
+                      L"［はい］現在の履歴に追加\r\n"
+                      L"［いいえ］現在の履歴を置き換え\r\n"
+                      L"［キャンセル］読み込みを中止",
                 L"NowPlaying Copy & Artwork",
                 MB_YESNOCANCEL |
                     MB_ICONQUESTION |
@@ -3794,7 +4039,7 @@ namespace {
                 create_unique_temp_directory(L"npi");
             if (extractionDirectory.empty()) {
                 set_status(
-                    L"読み込み用の一時フォルダーを作成できませんでした。");
+                    ui_text(L"読み込み用の一時フォルダーを作成できませんでした。"));
                 return;
             }
 
@@ -3806,8 +4051,8 @@ namespace {
                     exitCode)) {
                 fs::remove_all(extractionDirectory, ec);
                 std::wstring error =
-                    L"履歴バックアップを展開できませんでした。";
-                error += L" エラーコード：";
+                    ui_text(L"履歴バックアップを展開できませんでした。");
+                error += ui_text(L" エラーコード：");
                 error += std::to_wstring(exitCode);
                 set_status(error);
                 return;
@@ -3834,7 +4079,7 @@ namespace {
                     ec)) {
                 fs::remove_all(extractionDirectory, ec);
                 set_status(
-                    L"バックアップ内に履歴ファイルがありません。");
+                    ui_text(L"バックアップ内に履歴ファイルがありません。"));
                 return;
             }
 
@@ -3947,7 +4192,7 @@ namespace {
                     m_records);
                 fs::remove_all(extractionDirectory, ec);
                 set_status(
-                    L"読み込んだ履歴を保存できませんでした。");
+                    ui_text(L"読み込んだ履歴を保存できませんでした。"));
                 return;
             }
 
@@ -3960,29 +4205,29 @@ namespace {
 
             std::wstring message =
                 append
-                    ? L"投稿履歴を追加しました。"
-                    : L"投稿履歴を置き換えました。";
+                    ? ui_text(L"投稿履歴を追加しました。")
+                    : ui_text(L"投稿履歴を置き換えました。");
             message += L"\r\n\r\n追加：";
             message += std::to_wstring(addedCount);
             message += L"件\r\n重複のため省略：";
             message += std::to_wstring(duplicateCount);
-            message += L"件";
+            message += ui_text(L"件");
             if (restoredPinCount > 0) {
                 message += L"\r\n重複履歴へピン留めを復元：";
                 message +=
                     std::to_wstring(restoredPinCount);
-                message += L"件";
+                message += ui_text(L"件");
             }
             if (missingArtworkCount > 0) {
                 message += L"\r\n画像なし：";
                 message +=
                     std::to_wstring(missingArtworkCount);
-                message += L"件";
+                message += ui_text(L"件");
             }
             message += L"\r\n現在の保存件数：";
             message +=
                 std::to_wstring(m_records.size());
-            message += L"件";
+            message += ui_text(L"件");
 
             MessageBoxW(
                 m_wnd,
@@ -3990,7 +4235,7 @@ namespace {
                 L"NowPlaying Copy & Artwork",
                 MB_OK | MB_ICONINFORMATION);
             set_status(
-                L"投稿履歴のバックアップを読み込みました。");
+                ui_text(L"投稿履歴のバックアップを読み込みました。"));
         }
 
         void clear_records() {
@@ -4004,7 +4249,7 @@ namespace {
                         return record.pinned;
                     }));
             std::wstring confirmation =
-                L"すべての投稿履歴を削除しますか？";
+                ui_text(L"すべての投稿履歴を削除しますか？");
             if (pinnedCount > 0) {
                 confirmation += L"\r\n\r\n★ピン留め中の履歴 ";
                 confirmation += std::to_wstring(pinnedCount);
@@ -4031,11 +4276,11 @@ namespace {
             if (!write_history_records(
                     m_outputDirectory,
                     m_records)) {
-                set_status(L"履歴ファイルの更新に失敗しました。");
+                set_status(ui_text(L"履歴ファイルの更新に失敗しました。"));
                 return;
             }
             rebuild_history_list();
-            set_status(L"投稿履歴をすべて削除しました。");
+            set_status(ui_text(L"投稿履歴をすべて削除しました。"));
         }
 
         fs::path m_outputDirectory;
@@ -4167,7 +4412,7 @@ namespace {
             m_wnd = CreateWindowExW(
                 WS_EX_DLGMODALFRAME,
                 window_class_name(),
-                L"NowPlaying投稿プレビュー",
+                ui_text(L"NowPlaying投稿プレビュー"),
                 WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
                 x, y, width, height,
                 parent, nullptr, core_api::get_my_instance(), this);
@@ -4314,7 +4559,7 @@ namespace {
 
         void create_controls() {
             m_templateLabel = create_control(
-                0, L"STATIC", L"テンプレート", 0, 0);
+                0, L"STATIC", ui_text(L"テンプレート"), 0, 0);
             m_templateCombo = create_control(
                 0, L"COMBOBOX", L"",
                 WS_TABSTOP | CBS_DROPDOWNLIST | WS_VSCROLL,
@@ -4325,7 +4570,7 @@ namespace {
                     reinterpret_cast<LPARAM>(name.c_str()));
             }
             if (m_data.templateNames.empty()) {
-                m_data.templateNames.push_back(L"テンプレート");
+                m_data.templateNames.push_back(ui_text(L"テンプレート"));
                 m_data.templateFormats.push_back(
                     utf8_to_wide(default_post_format));
             }
@@ -4341,7 +4586,7 @@ namespace {
                 EnableWindow(m_templateCombo, FALSE);
                 SetWindowTextW(
                     m_templateLabel,
-                    L"使用テンプレート");
+                    ui_text(L"使用テンプレート"));
             }
 
             m_artworkControl = create_control(
@@ -4350,7 +4595,7 @@ namespace {
             m_sourceLabel = create_control(
                 0, L"STATIC", L"", SS_CENTER, IDC_PREVIEW_SOURCE);
             m_textLabel = create_control(
-                0, L"STATIC", L"投稿文（その場で編集できます）", 0, 0);
+                0, L"STATIC", ui_text(L"投稿文（その場で編集できます）"), 0, 0);
             m_textEdit = create_control(
                 WS_EX_CLIENTEDGE, L"EDIT", m_data.text.c_str(),
                 WS_TABSTOP | ES_MULTILINE | ES_AUTOVSCROLL |
@@ -4359,47 +4604,47 @@ namespace {
             m_countLabel = create_control(
                 0, L"STATIC", L"", SS_RIGHT, IDC_PREVIEW_COUNT);
             m_copyButton = create_control(
-                0, L"BUTTON", L"文章をコピー",
+                0, L"BUTTON", ui_text(L"文章をコピー"),
                 WS_TABSTOP | BS_PUSHBUTTON, IDC_PREVIEW_COPY);
             m_copyImageButton = create_control(
-                0, L"BUTTON", L"画像をコピー",
+                0, L"BUTTON", ui_text(L"画像をコピー"),
                 WS_TABSTOP | BS_PUSHBUTTON, IDC_PREVIEW_COPY_IMAGE);
             m_openXButton = create_control(
-                0, L"BUTTON", L"Xで投稿",
+                0, L"BUTTON", ui_text(L"Xで投稿"),
                 WS_TABSTOP | BS_PUSHBUTTON, IDC_PREVIEW_OPEN_X);
             m_copyImageOpenXButton = create_control(
-                0, L"BUTTON", L"画像をコピーしてXを開く",
+                0, L"BUTTON", ui_text(L"画像をコピーしてXを開く"),
                 WS_TABSTOP | BS_PUSHBUTTON,
                 IDC_PREVIEW_COPY_IMAGE_OPEN_X);
             m_openFolderButton = create_control(
-                0, L"BUTTON", L"保存フォルダを開く",
+                0, L"BUTTON", ui_text(L"保存フォルダを開く"),
                 WS_TABSTOP | BS_PUSHBUTTON, IDC_PREVIEW_OPEN_FOLDER);
             m_historyButton = create_control(
-                0, L"BUTTON", L"投稿履歴",
+                0, L"BUTTON", ui_text(L"投稿履歴"),
                 WS_TABSTOP | BS_PUSHBUTTON, IDC_PREVIEW_HISTORY);
             m_copyCloseButton = create_control(
-                0, L"BUTTON", L"コピーして閉じる",
+                0, L"BUTTON", ui_text(L"コピーして閉じる"),
                 WS_TABSTOP | BS_DEFPUSHBUTTON, IDC_PREVIEW_COPY_CLOSE);
             m_closeButton = create_control(
-                0, L"BUTTON", L"閉じる",
+                0, L"BUTTON", ui_text(L"閉じる"),
                 WS_TABSTOP | BS_PUSHBUTTON, IDC_PREVIEW_CLOSE);
             const std::wstring initialStatus =
                 m_data.initialStatus.empty()
-                    ? L"文章を確認・編集してからコピーしてください。"
+                    ? ui_text(L"文章を確認・編集してからコピーしてください。")
                     : m_data.initialStatus;
             m_statusLabel = create_control(
                 0, L"STATIC",
                 initialStatus.c_str(),
                 0, IDC_PREVIEW_STATUS);
 
-            std::wstring sourceText = L"アートワーク：";
+            std::wstring sourceText = ui_text(L"アートワーク：");
             if (m_data.artworkPath.empty()) {
                 sourceText += m_data.artworkSource.empty()
-                    ? L"なし"
+                    ? ui_text(L"なし")
                     : m_data.artworkSource;
             } else {
                 sourceText += m_data.artworkSource.empty()
-                    ? L"あり"
+                    ? ui_text(L"あり")
                     : m_data.artworkSource;
             }
             if (!m_data.optimizationInfo.empty()) {
@@ -4495,7 +4740,7 @@ namespace {
                 SetBkMode(item->hDC, TRANSPARENT);
                 SetTextColor(item->hDC, artwork_placeholder_text_color(static_cast<bool>(m_dark)));
                 DrawTextW(
-                    item->hDC, L"アートワークなし", -1, &textRect,
+                    item->hDC, ui_text(L"アートワークなし"), -1, &textRect,
                     DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
                 return;
             }
@@ -4524,7 +4769,7 @@ namespace {
                 m_data.track.is_empty()) {
                 SetWindowTextW(
                     m_statusLabel,
-                    L"履歴から開いた投稿文ではテンプレートを切り替えられません。");
+                    ui_text(L"履歴から開いた投稿文ではテンプレートを切り替えられません。"));
                 return;
             }
 
@@ -4544,7 +4789,7 @@ namespace {
             SetWindowTextW(m_textEdit, generated.c_str());
             SetWindowTextW(
                 m_statusLabel,
-                L"テンプレートを切り替えました。編集内容は新しい書式で置き換わりました。");
+                ui_text(L"テンプレートを切り替えました。編集内容は新しい書式で置き換わりました。"));
             SetFocus(m_textEdit);
             SendMessageW(
                 m_textEdit, EM_SETSEL,
@@ -4557,9 +4802,9 @@ namespace {
             const std::wstring text = get_window_text_string(m_textEdit);
             const size_t count = unicode_character_count(text);
             const size_t weighted = x_weighted_length(text);
-            std::wstring label = L"文字数：" + std::to_wstring(count) +
-                L"　X換算目安：" + std::to_wstring(weighted) + L" / 280";
-            if (weighted > 280) label += L"（超過）";
+            std::wstring label = ui_text(L"文字数：") + std::to_wstring(count) +
+                ui_text(L"　X換算目安：") + std::to_wstring(weighted) + L" / 280";
+            if (weighted > 280) label += ui_text(L"（超過）");
             SetWindowTextW(m_countLabel, label.c_str());
         }
 
@@ -4570,7 +4815,7 @@ namespace {
             const std::wstring warning =
                 L"X換算の目安が280を超えています（" +
                 std::to_wstring(weighted) +
-                L"）。そのままXの投稿画面を開きますか？";
+                ui_text(L"）。そのままXの投稿画面を開きますか？");
             return MessageBoxW(
                 m_wnd,
                 warning.c_str(),
@@ -4588,7 +4833,7 @@ namespace {
         void open_x_post(bool copyImageFirst) {
             const std::wstring text = get_window_text_string(m_textEdit);
             if (!confirm_x_length(text)) {
-                SetWindowTextW(m_statusLabel, L"X投稿画面を開く操作を中止しました。");
+                SetWindowTextW(m_statusLabel, ui_text(L"X投稿画面を開く操作を中止しました。"));
                 return;
             }
 
@@ -4596,15 +4841,15 @@ namespace {
                 if (m_data.artworkPath.empty()) {
                     SetWindowTextW(
                         m_statusLabel,
-                        L"コピーできるアートワークがありません。");
+                        ui_text(L"コピーできるアートワークがありません。"));
                     return;
                 }
                 if (!copy_artwork_to_clipboard(m_data.artworkPath, m_wnd)) {
                     SetWindowTextW(
                         m_statusLabel,
-                        L"画像のクリップボードコピーに失敗しました。");
+                        ui_text(L"画像のクリップボードコピーに失敗しました。"));
                     show_message(
-                        L"画像のクリップボードコピーに失敗しました。",
+                        ui_text(L"画像のクリップボードコピーに失敗しました。"),
                         MB_ICONWARNING);
                     return;
                 }
@@ -4643,18 +4888,18 @@ namespace {
             std::wstring status;
             if (opened) {
                 status = copyImageFirst ?
-                    L"画像をコピーし、Xの投稿画面を開きました。投稿画面でCtrl＋Vを押してください。" :
-                    L"文章を入力した状態でXの投稿画面を開きました。";
+                    ui_text(L"画像をコピーし、Xの投稿画面を開きました。投稿画面でCtrl＋Vを押してください。") :
+                    ui_text(L"文章を入力した状態でXの投稿画面を開きました。");
                 if (historyOK) {
-                    status += L" 投稿履歴へ保存しました。";
+                    status += ui_text(L" 投稿履歴へ保存しました。");
                 } else {
-                    status += L" 投稿履歴の保存には失敗しました。";
+                    status += ui_text(L" 投稿履歴の保存には失敗しました。");
                 }
                 if (m_data.saveText && !textOK) {
-                    status += L" nowplaying.txtの保存には失敗しました。";
+                    status += ui_text(L" nowplaying.txtの保存には失敗しました。");
                 }
             } else {
-                status = L"Xの投稿画面を開けませんでした。";
+                status = ui_text(L"Xの投稿画面を開けませんでした。");
             }
             SetWindowTextW(m_statusLabel, status.c_str());
 
@@ -4665,7 +4910,7 @@ namespace {
 
         void copy_image() {
             if (m_data.artworkPath.empty()) {
-                SetWindowTextW(m_statusLabel, L"コピーできるアートワークがありません。");
+                SetWindowTextW(m_statusLabel, ui_text(L"コピーできるアートワークがありません。"));
                 return;
             }
             const bool ok = copy_artwork_to_clipboard(
@@ -4673,12 +4918,12 @@ namespace {
             SetWindowTextW(
                 m_statusLabel,
                 ok ?
-                    L"画像をクリップボードへコピーしました。文章を貼り付けた後に画像を貼り付けてください。" :
-                    L"画像のクリップボードコピーに失敗しました。");
+                    ui_text(L"画像をクリップボードへコピーしました。文章を貼り付けた後に画像を貼り付けてください。") :
+                    ui_text(L"画像のクリップボードコピーに失敗しました。"));
             if (m_data.showCompletion || !ok) {
                 show_message(
-                    ok ? L"画像をクリップボードへコピーしました。" :
-                         L"画像のクリップボードコピーに失敗しました。",
+                    ok ? ui_text(L"画像をクリップボードへコピーしました。") :
+                         ui_text(L"画像のクリップボードコピーに失敗しました。"),
                     ok ? MB_ICONINFORMATION : MB_ICONWARNING);
             }
         }
@@ -4694,12 +4939,12 @@ namespace {
             }
 
             std::wstring status = clipboardOK ?
-                L"文章をクリップボードへコピーしました。" :
-                L"クリップボードへのコピーに失敗しました。";
+                ui_text(L"文章をクリップボードへコピーしました。") :
+                ui_text(L"クリップボードへのコピーに失敗しました。");
             if (m_data.saveText) {
                 status += textOK ?
-                    L" nowplaying.txtも更新しました。" :
-                    L" nowplaying.txtの保存に失敗しました。";
+                    ui_text(L" nowplaying.txtも更新しました。") :
+                    ui_text(L" nowplaying.txtの保存に失敗しました。");
             }
             SetWindowTextW(m_statusLabel, status.c_str());
 
@@ -4752,7 +4997,7 @@ namespace {
             g_cfg_show_completion.get();
         previewData.allowTemplateSwitch = false;
         previewData.initialStatus =
-            L"投稿履歴を読み込みました。文章を編集して再利用できます。";
+            ui_text(L"投稿履歴を読み込みました。文章を編集して再利用できます。");
 
         const auto configuredTemplates =
             configured_template_definitions();
@@ -4777,14 +5022,14 @@ namespace {
 
         if (previewData.templateNames.empty()) {
             previewData.templateNames.push_back(
-                L"（テンプレート不明・履歴）");
+                ui_text(L"（テンプレート不明・履歴）"));
             previewData.templateFormats.push_back(record.text);
         } else if (!matchingTemplateFound) {
             previewData.selectedTemplate = 0;
             previewData.templateNames[0] =
                 record.templateName.empty()
-                    ? L"（テンプレート不明・履歴）"
-                    : record.templateName + L"（履歴）";
+                    ? ui_text(L"（テンプレート不明・履歴）")
+                    : record.templateName + ui_text(L"（履歴）");
         }
 
         std::error_code artworkError;
@@ -4795,17 +5040,17 @@ namespace {
             previewData.artworkPath =
                 record.artworkPath;
             previewData.artworkSource =
-                L"投稿履歴の保存画像";
+                ui_text(L"投稿履歴の保存画像");
             previewData.optimizationInfo =
                 describe_artwork_file(
                     record.artworkPath,
-                    L"履歴画像");
+                    ui_text(L"履歴画像"));
         } else if (!record.artworkPath.empty()) {
             previewData.artworkSource =
-                L"履歴画像が見つかりません";
+                ui_text(L"履歴画像が見つかりません");
         } else {
             previewData.artworkSource =
-                L"なし";
+                ui_text(L"なし");
         }
 
         return nowplaying_preview_window::open(
@@ -4816,7 +5061,7 @@ namespace {
         metadb_handle_ptr track;
         if (!static_api_ptr_t<playback_control>()->get_now_playing(track) ||
             track.is_empty()) {
-            show_message(L"現在再生中の曲がありません。", MB_ICONWARNING);
+            show_message(ui_text(L"現在再生中の曲がありません。"), MB_ICONWARNING);
             return;
         }
 
@@ -4832,7 +5077,7 @@ namespace {
             templateFormats.push_back(item.format);
         }
         if (templateFormats.empty()) {
-            templateNames.push_back(L"シンプル");
+            templateNames.push_back(ui_text(L"シンプル"));
             templateFormats.push_back(
                 utf8_to_wide(default_post_format));
             templateIndex = 0;
@@ -4862,7 +5107,7 @@ namespace {
         std::wstring parsedInner;
         DWORD processExitCode = 0;
         std::wstring embeddedError;
-        std::wstring artworkSource = L"なし";
+        std::wstring artworkSource = ui_text(L"なし");
         fs::path artworkForPost;
         std::wstring optimizationInfo;
 
@@ -4870,7 +5115,7 @@ namespace {
             embeddedOK = export_embedded_cover(
                 track, outDir, exported, embeddedError);
             artOK = embeddedOK;
-            if (embeddedOK) artworkSource = L"埋め込みフロントカバー";
+            if (embeddedOK) artworkSource = ui_text(L"埋め込みフロントカバー");
 
             if (!artOK) {
                 if (parse_zip_location(rawPath, parsedZip, parsedInner)) {
@@ -4879,14 +5124,14 @@ namespace {
                         artOK = export_zip_cover(
                             parsedZip, parsedInner, outDir,
                             exported, processExitCode);
-                        if (artOK) artworkSource = L"ZIP内画像";
+                        if (artOK) artworkSource = ui_text(L"ZIP内画像");
                     }
                 } else {
                     const std::wstring localPath =
                         normalize_local_file_path(rawPath);
                     artOK = export_folder_cover(
                         fs::path(localPath), outDir, exported);
-                    if (artOK) artworkSource = L"同じフォルダの画像";
+                    if (artOK) artworkSource = ui_text(L"同じフォルダの画像");
                 }
             }
         }
@@ -4906,16 +5151,16 @@ namespace {
                     optimizationInfo = optimizedInfo;
                 } else {
                     optimizationInfo = L"最適化に失敗したため元画像を使用します。\r\n";
-                    optimizationInfo += describe_artwork_file(exported, L"元画像");
+                    optimizationInfo += describe_artwork_file(exported, ui_text(L"元画像"));
                 }
             } else {
-                optimizationInfo = L"最適化：オフ\r\n";
-                optimizationInfo += describe_artwork_file(exported, L"元画像");
+                optimizationInfo = ui_text(L"最適化：オフ\r\n");
+                optimizationInfo += describe_artwork_file(exported, ui_text(L"元画像"));
             }
         }
 
         std::wstring debug;
-        debug += L"Component version: 1.1.3\r\n";
+        debug += L"Component version: 1.2.2\r\n";
         debug += L"Raw path: " + rawPath + L"\r\n";
         debug += L"Template index: " +
             std::to_wstring(templateIndex + 1) + L"\r\n";
@@ -4967,8 +5212,8 @@ namespace {
 
         std::wstring result;
         result += clipboardOK ?
-            L"NowPlaying文をクリップボードへコピーしました。" :
-            L"クリップボードへのコピーに失敗しました。";
+            ui_text(L"NowPlaying文をクリップボードへコピーしました。") :
+            ui_text(L"クリップボードへのコピーに失敗しました。");
         if (saveText) {
             if (textOK) {
                 result += L"\r\n\r\nテキスト：\r\n";
@@ -5027,8 +5272,149 @@ namespace {
         }
 
         static std::wstring help_text() {
+            if (ui_uses_english()) {
+                return LR"HELP(NowPlaying Copy & Artwork Help
+Version 1.2.2
+
+[1. Basic Usage]
+1. Play a track in foobar2000.
+2. Choose File > Create NowPlaying Post.
+3. Review or edit the text and artwork in the preview.
+4. Use Copy Text or Copy Image and Open X.
+5. If the image is not attached on X, press Ctrl+V.
+
+[2. Post Preview]
+The post text can be edited directly.
+The window shows character count and an approximate X-weight count.
+Copy Text copies the current text.
+Copy Image copies the prepared artwork.
+Post on X opens the X compose page with the text.
+Copy Image and Open X copies the image and opens X.
+Open Output Folder opens the configured output folder.
+Post History opens saved posting history.
+
+[3. Templates]
+Location:
+Preferences > Tools > NowPlaying Copy & Artwork
+
+You can save 1 to 20 templates.
+Add creates a template.
+Duplicate copies the selected template.
+Delete removes the selected template.
+Up and Down change the order.
+Reset restores the five default templates.
+
+Templates use foobar2000 Title Formatting.
+Examples:
+%title%        Track title
+%artist%       Artist
+%album%        Album
+%date%         Date or year
+%tracknumber%  Track number
+%length%       Duration
+
+Multiline formats and normal Title Formatting conditions are supported.
+
+[4. Artwork Search]
+Artwork is searched approximately in this order:
+1. Embedded front cover
+2. cover / folder / front in the track folder
+3. cover / folder / front in ZIP files, when ZIP search is enabled
+
+Posts can still be created when no artwork is found.
+
+Artwork optimization can create artwork-post.jpg or artwork-post.png.
+Maximum size: 256 to 4096 px
+Format: JPEG or PNG
+JPEG quality: 40 to 100
+Image mode: keep aspect ratio or center square crop
+
+[5. Posting to X]
+Post on X sends the text to the X compose page.
+Due to browser restrictions, the image cannot be attached automatically.
+Use Copy Image and Open X, then press Ctrl+V on X.
+
+A confirmation is shown when the estimated X count exceeds 280.
+Actual acceptance depends on the current X specification.
+
+[6. Post History]
+Open from File > NowPlaying Post History.
+
+Click selects one entry.
+Ctrl+Click selects individual entries.
+Shift+Click selects a range.
+Double-click opens one entry in Preview.
+Search checks date, title, artist, template, and post text.
+Copy Text copies multiple entries separated by blank lines.
+Delete Selected removes multiple selected entries.
+Image, X, and folder actions require exactly one selected entry.
+
+[7. Pinning]
+Pin important history entries to protect them from automatic trimming.
+Pinned entries show a star.
+Multiple entries can be pinned or unpinned together.
+Pinned only filters the list.
+Pinned entries do not count toward the normal history limit.
+Manual deletion can still remove pinned entries.
+
+[8. History Limits]
+History save limit controls how many normal entries are stored.
+It can be set from 10 to 1000.
+Old unpinned entries are removed first.
+
+History display limit controls how many entries are shown at once.
+It does not delete saved history.
+Search always checks all saved history.
+
+[9. Settings Backup]
+Export Settings saves templates and settings to an INI file.
+Import Settings restores them.
+Press Apply or OK after importing.
+
+The INI includes templates, output folder, options, artwork settings,
+history limits, and UI language.
+Post history and history images are not included.
+
+[10. History Backup]
+Export History saves history and images to one ZIP file.
+Import History can add to or replace the current history.
+Duplicate entries are not imported again.
+Pin information is included.
+
+[11. Main Files]
+nowplaying.txt
+Current post text.
+
+artwork-post.jpg / artwork-post.png
+Optimized posting image.
+
+nowplaying-history.tsv
+History database.
+
+nowplaying-history-artwork
+History image folder.
+
+Avoid editing nowplaying-history.tsv directly.
+
+[12. Language]
+Language options:
+Automatic: Japanese on a Japanese Windows UI, English otherwise
+日本語: always Japanese
+English: always English
+
+Close and reopen component windows after changing the language.
+
+[13. License]
+MIT License
+Copyright (c) 2026 Maximum
+
+The software is provided as-is, without warranty.
+See license.txt or LICENSE for the complete terms.
+)HELP";
+            }
+
             return LR"HELP(NowPlaying Copy & Artwork ヘルプ
-バージョン 1.1.2
+バージョン 1.2.2
 
 【1. 基本的な使い方】
 1. foobar2000で曲を再生します。
@@ -5037,171 +5423,59 @@ namespace {
 4. ［文章をコピー］または［画像をコピーしてXを開く］を使います。
 5. Xの画面で画像が未添付の場合は Ctrl＋V で貼り付けます。
 
-設定で「投稿前にプレビュー画面を表示する」を無効にすると、
-投稿文の作成・コピーをプレビューなしで実行します。
-
-
 【2. 投稿プレビュー】
-・投稿文はプレビュー画面内で自由に編集できます。
-・文字数とX換算の目安を表示します。
-・［文章をコピー］：表示中の文章をクリップボードへコピーします。
-・［画像をコピー］：投稿用画像をクリップボードへコピーします。
-・［Xで投稿］：文章を入力したXの投稿画面を開きます。
-・［画像をコピーしてXを開く］：画像をコピーしてXを開きます。
-・［保存フォルダを開く］：現在の出力先を開きます。
-・［投稿履歴］：保存済みの投稿履歴を開きます。
-
+投稿文はプレビュー画面内で自由に編集できます。
+文字数とX換算の目安を表示します。
 
 【3. テンプレート】
 設定場所：
 ［基本設定］→［Tools］→［NowPlaying Copy & Artwork］
 
 テンプレートは1～20個まで保存できます。
-・［追加］：新しいテンプレートを追加
-・［複製］：選択中のテンプレートを複製
-・［削除］：選択中のテンプレートを削除
-・［↑］［↓］：表示順を変更
-・［初期化］：標準の5テンプレートへ戻す
-
-投稿文にはfoobar2000のTitle Formattingを使用できます。
-主な例：
-%title%        曲名
-%artist%       アーティスト
-%album%        アルバム名
-%date%         年・日付
-%tracknumber%  トラック番号
-%length%       再生時間
-
-複数行の投稿文も使用できます。
-条件分岐など、通常のTitle Formatting構文も利用できます。
-
+foobar2000のTitle Formattingを使用できます。
 
 【4. アートワークの検索】
-おおむね次の優先順で画像を探します。
-1. 音源へ埋め込まれたフロントカバー
-2. 音源と同じフォルダーの cover / folder / front 画像
-3. ZIP内の cover / folder / front 画像
-   ※設定でZIP検索を有効にしている場合
-
-画像が見つからない場合でも投稿文は作成できます。
-
-「投稿用アートワークを最適化する」を有効にすると、
-元画像とは別に artwork-post.jpg または artwork-post.png を作成します。
-・最大サイズ：256～4096px
-・形式：JPEG / PNG
-・JPEG画質：40～100
-・画像処理：縦横比を維持、または中央を正方形に切り抜き
-
+埋め込みフロントカバー、同じフォルダーのcover／folder／front、
+ZIP内のcover／folder／frontの順に検索します。
 
 【5. Xへの投稿】
-［Xで投稿］は文章をXへ渡します。
-画像はWebブラウザーの制約により自動添付できないため、
-［画像をコピーしてXを開く］を使った後、X上で Ctrl＋V を押します。
-
-X換算が280を超える場合は確認メッセージを表示します。
-最終的な投稿可否はX側の仕様により変わることがあります。
-
+画像は自動添付できないため、
+［画像をコピーしてXを開く］の後にCtrl＋Vを押します。
 
 【6. 投稿履歴】
-開き方：
-［ファイル］→［NowPlaying投稿履歴］
-
-・クリック：1件選択
-・Ctrl＋クリック：個別に複数選択
-・Shift＋クリック：範囲選択
-・ダブルクリック：選択した履歴をプレビューで開く
-・検索欄：日時、曲名、アーティスト、テンプレート名、投稿文を検索
-・［文章をコピー］：複数選択時は空行区切りでまとめてコピー
-・［選択履歴を削除］：複数選択した履歴を一括削除
-・画像コピー、X再投稿、フォルダーを開く操作は1件選択時のみ使用可能
-
-履歴からプレビューを開いた場合、投稿文は編集できますが、
-元音源の情報が残っていないためテンプレート切り替えは無効になります。
-
+検索、複数選択、再編集、再投稿、削除に対応しています。
 
 【7. ピン留め】
-残しておきたい履歴は［ピン留め］で保護できます。
-・ピン留め履歴には一覧で ★ を表示
-・複数選択して一括ピン留め／解除が可能
-・［★ ピン留めのみ表示］で絞り込み
-・ピン留め履歴は通常履歴の保存上限に含まれません
-・手動削除と「すべて削除」ではピン留め履歴も削除できます
-
+残しておきたい履歴を自動整理から保護できます。
 
 【8. 履歴の保存上限と表示上限】
-履歴保存上限：
-通常履歴を実際に保存する件数です。10～1000件で設定できます。
-上限を超えると、ピン留めされていない古い履歴から整理します。
-
-履歴表示上限：
-履歴画面へ一度に表示する件数です。
-保存済み履歴そのものは削除しません。
-検索中は表示上限を解除し、保存済みの全履歴を検索します。
-
+保存件数と表示件数を別々に設定できます。
 
 【9. 設定のバックアップ】
-設定画面の下部にあります。
-・［設定を書き出す...］：INIファイルへ保存
-・［設定を読み込む...］：INIファイルから復元
-
-保存される内容：
-・テンプレート
-・出力先
-・各チェック項目
-・画像最適化設定
-・履歴保存上限／表示上限
-
-投稿履歴と履歴画像は設定INIには含まれません。
-設定を読み込んだ後は［適用］または［OK］を押してください。
-
+設定INIにはテンプレート、各種設定、表示言語を保存します。
+投稿履歴と履歴画像は含まれません。
 
 【10. 履歴のバックアップ】
-投稿履歴画面の左下にあります。
-・［履歴を書き出す...］：履歴と画像を1つのZIPへ保存
-・［履歴を読み込む...］：ZIPから復元
-
-読み込み時：
-・［はい］現在の履歴へ追加
-・［いいえ］現在の履歴を置き換え
-・［キャンセル］中止
-
-日時・曲名・投稿文が同じ履歴は重複登録しません。
-ピン留め情報もZIPへ保存されます。
-
+履歴と画像をZIPへ書き出し、追加または置き換えで復元できます。
 
 【11. 作成される主なファイル】
 nowplaying.txt
-現在の投稿文です。
-
 artwork-post.jpg / artwork-post.png
-投稿向けに最適化した画像です。
-
 nowplaying-history.tsv
-投稿履歴の管理データです。
-
 nowplaying-history-artwork
-履歴画像を保存するフォルダーです。
 
-nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
-編集して上書きすると履歴を読み込めなくなる可能性があります。
+【12. 表示言語】
+自動：日本語版Windowsでは日本語、それ以外では英語
+日本語：常に日本語
+English：常に英語
 
+言語変更後は各画面を閉じて開き直してください。
 
-【12. 困ったとき】
-・画像が見つからない
-  埋め込み画像、同じフォルダーのcover等、ZIP検索設定を確認します。
+【13. ライセンス】
+MIT License
+Copyright (c) 2026 Maximum
 
-・Xへ画像が付かない
-  ［画像をコピーしてXを開く］の後、Xの投稿画面でCtrl＋Vを押します。
-
-・設定を別PCへ移したい
-  設定INIを書き出し、移行先で読み込みます。
-
-・履歴も別PCへ移したい
-  履歴画面からZIPを書き出し、移行先で読み込みます。
-
-・設定を元へ戻したい
-  テンプレートだけなら［初期化］、
-  ページ全体ならfoobar2000設定画面下部の［Reset page］を使います。
+正式な条件はlicense.txtまたはGitHubのLICENSEを確認してください。
 )HELP";
         }
 
@@ -5263,7 +5537,7 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
             m_wnd = CreateWindowExW(
                 WS_EX_DLGMODALFRAME,
                 window_class_name(),
-                L"NowPlaying Copy & Artwork ヘルプ",
+                ui_text(L"NowPlaying Copy & Artwork ヘルプ"),
                 style,
                 x, y, width, height,
                 parent,
@@ -5377,8 +5651,8 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
                     SetWindowTextW(
                         m_statusLabel,
                         copied
-                            ? L"ヘルプ内容をクリップボードへコピーしました。"
-                            : L"ヘルプ内容をコピーできませんでした。");
+                            ? ui_text(L"ヘルプ内容をクリップボードへコピーしました。")
+                            : ui_text(L"ヘルプ内容をコピーできませんでした。"));
                     return 0;
                 }
 
@@ -5437,7 +5711,7 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
             m_titleLabel = create_control(
                 0,
                 L"STATIC",
-                L"NowPlaying Copy & Artwork ヘルプ　v1.1.2",
+                ui_uses_english() ? L"NowPlaying Copy & Artwork Help  v1.2.2" : L"NowPlaying Copy & Artwork ヘルプ　v1.2.2",
                 0,
                 0);
 
@@ -5455,21 +5729,21 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
             m_statusLabel = create_control(
                 0,
                 L"STATIC",
-                L"基本操作からバックアップ方法まで確認できます。",
+                ui_text(L"基本操作からバックアップ方法まで確認できます。"),
                 0,
                 0);
 
             m_copyButton = create_control(
                 0,
                 L"BUTTON",
-                L"内容をコピー",
+                ui_text(L"内容をコピー"),
                 WS_TABSTOP | BS_PUSHBUTTON,
                 IDC_HELP_COPY);
 
             m_closeButton = create_control(
                 0,
                 L"BUTTON",
-                L"閉じる",
+                ui_text(L"閉じる"),
                 WS_TABSTOP | BS_PUSHBUTTON,
                 IDC_HELP_CLOSE);
         }
@@ -5565,7 +5839,8 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
         IDC_TEMPLATE_DELETE = 1123,
         IDC_TEMPLATE_UP = 1124,
         IDC_TEMPLATE_DOWN = 1125,
-        IDC_HELP_BUTTON = 1126
+        IDC_HELP_BUTTON = 1126,
+        IDC_LANGUAGE = 1127
     };
 
     std::wstring get_window_text_string(HWND wnd) {
@@ -5674,7 +5949,7 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
 
         std::ifstream file(path, std::ios::binary);
         if (!file) {
-            errorText = L"設定ファイルを開けませんでした。";
+            errorText = ui_text(L"設定ファイルを開けませんでした。");
             return false;
         }
 
@@ -5682,7 +5957,7 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
         const std::streamoff fileSize = file.tellg();
         if (fileSize < 0 || fileSize > 1024 * 1024) {
             errorText =
-                L"設定ファイルのサイズが不正です。";
+                ui_text(L"設定ファイルのサイズが不正です。");
             return false;
         }
         file.seekg(0, std::ios::beg);
@@ -5743,7 +6018,7 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
             fileType->second !=
                 "NowPlaying Copy & Artwork Settings") {
             errorText =
-                L"NowPlaying Copy & Artworkの設定ファイルではありません。";
+                ui_text(L"NowPlaying Copy & Artworkの設定ファイルではありません。");
             return false;
         }
 
@@ -5912,6 +6187,12 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
                     history_display_limit_from_index(
                         displayLimitSelection)).c_str();
 
+            const LRESULT languageSelection =
+                SendMessageW(m_languageCombo, CB_GETCURSEL, 0, 0);
+            g_cfg_ui_language =
+                languageSelection == 1 ? "ja" :
+                languageSelection == 2 ? "en" : "auto";
+
             g_cfg_template_schema_version = "3";
             notify_state_changed();
         }
@@ -5940,6 +6221,7 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
                 CB_SETCURSEL,
                 2,
                 0);
+            SendMessageW(m_languageCombo, CB_SETCURSEL, 0, 0);
             update_optimization_controls_enabled();
             m_initializing = false;
             notify_state_changed();
@@ -6103,6 +6385,11 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
                     notify_state_changed();
                     return 0;
                 }
+                if (id == IDC_LANGUAGE &&
+                    notification == CBN_SELCHANGE) {
+                    notify_state_changed();
+                    return 0;
+                }
                 if ((id == IDC_SAVE_TEXT || id == IDC_SEARCH_ZIP ||
                      id == IDC_SHOW_COMPLETION || id == IDC_SHOW_PREVIEW) &&
                     notification == BN_CLICKED) {
@@ -6139,19 +6426,19 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
 
         void create_controls() {
             m_templateLabel = create_control(
-                0, L"STATIC", L"編集するテンプレート", 0);
+                0, L"STATIC", ui_text(L"編集するテンプレート"), 0);
             m_templateCombo = create_control(
                 0, L"COMBOBOX", L"",
                 WS_TABSTOP | CBS_DROPDOWNLIST | WS_VSCROLL,
                 IDC_TEMPLATE_COMBO);
             m_addTemplateButton = create_control(
-                0, L"BUTTON", L"追加",
+                0, L"BUTTON", ui_text(L"追加"),
                 WS_TABSTOP | BS_PUSHBUTTON, IDC_TEMPLATE_ADD);
             m_duplicateTemplateButton = create_control(
-                0, L"BUTTON", L"複製",
+                0, L"BUTTON", ui_text(L"複製"),
                 WS_TABSTOP | BS_PUSHBUTTON, IDC_TEMPLATE_DUPLICATE);
             m_deleteTemplateButton = create_control(
-                0, L"BUTTON", L"削除",
+                0, L"BUTTON", ui_text(L"削除"),
                 WS_TABSTOP | BS_PUSHBUTTON, IDC_TEMPLATE_DELETE);
             m_moveTemplateUpButton = create_control(
                 0, L"BUTTON", L"↑",
@@ -6160,15 +6447,15 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
                 0, L"BUTTON", L"↓",
                 WS_TABSTOP | BS_PUSHBUTTON, IDC_TEMPLATE_DOWN);
             m_resetTemplatesButton = create_control(
-                0, L"BUTTON", L"初期化",
+                0, L"BUTTON", ui_text(L"初期化"),
                 WS_TABSTOP | BS_PUSHBUTTON, IDC_RESET_TEMPLATES);
             m_nameLabel = create_control(
-                0, L"STATIC", L"テンプレート名", 0);
+                0, L"STATIC", ui_text(L"テンプレート名"), 0);
             m_nameEdit = create_control(
                 WS_EX_CLIENTEDGE, L"EDIT", L"",
                 WS_TABSTOP | ES_AUTOHSCROLL, IDC_TEMPLATE_NAME);
             m_formatLabel = create_control(
-                0, L"STATIC", L"投稿文の書式", 0);
+                0, L"STATIC", ui_text(L"投稿文の書式"), 0);
             m_formatEdit = create_control(
                 WS_EX_CLIENTEDGE, L"EDIT", L"",
                 WS_TABSTOP | ES_MULTILINE | ES_AUTOVSCROLL |
@@ -6176,69 +6463,69 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
                 IDC_FORMAT_EDIT);
             m_formatHint = create_control(
                 0, L"STATIC",
-                L"使用例：%title%  %artist%  %album%  %date%  %tracknumber%  %length%",
+                ui_text(L"使用例：%title%  %artist%  %album%  %date%  %tracknumber%  %length%"),
                 0);
             m_outputLabel = create_control(
-                0, L"STATIC", L"保存先フォルダ", 0);
+                0, L"STATIC", ui_text(L"保存先フォルダ"), 0);
             m_outputEdit = create_control(
                 WS_EX_CLIENTEDGE, L"EDIT", L"",
                 WS_TABSTOP | ES_AUTOHSCROLL, IDC_OUTPUT_EDIT);
             m_browseButton = create_control(
-                0, L"BUTTON", L"参照...",
+                0, L"BUTTON", ui_text(L"参照..."),
                 WS_TABSTOP | BS_PUSHBUTTON, IDC_BROWSE_BUTTON);
             m_showPreview = create_control(
-                0, L"BUTTON", L"投稿前にプレビュー画面を表示する",
+                0, L"BUTTON", ui_text(L"投稿前にプレビュー画面を表示する"),
                 WS_TABSTOP | BS_AUTOCHECKBOX, IDC_SHOW_PREVIEW);
             m_saveText = create_control(
-                0, L"BUTTON", L"nowplaying.txtを保存する",
+                0, L"BUTTON", ui_text(L"nowplaying.txtを保存する"),
                 WS_TABSTOP | BS_AUTOCHECKBOX, IDC_SAVE_TEXT);
             m_saveArtwork = create_control(
-                0, L"BUTTON", L"アートワークを保存する",
+                0, L"BUTTON", ui_text(L"アートワークを保存する"),
                 WS_TABSTOP | BS_AUTOCHECKBOX, IDC_SAVE_ARTWORK);
             m_searchZip = create_control(
-                0, L"BUTTON", L"ZIP内のcover／folder／front画像を検索する",
+                0, L"BUTTON", ui_text(L"ZIP内のcover／folder／front画像を検索する"),
                 WS_TABSTOP | BS_AUTOCHECKBOX | BS_MULTILINE,
                 IDC_SEARCH_ZIP);
             m_showCompletion = create_control(
-                0, L"BUTTON", L"処理完了メッセージを表示する",
+                0, L"BUTTON", ui_text(L"処理完了メッセージを表示する"),
                 WS_TABSTOP | BS_AUTOCHECKBOX, IDC_SHOW_COMPLETION);
             m_optimizeArtwork = create_control(
-                0, L"BUTTON", L"投稿用アートワークを最適化する",
+                0, L"BUTTON", ui_text(L"投稿用アートワークを最適化する"),
                 WS_TABSTOP | BS_AUTOCHECKBOX, IDC_OPTIMIZE_ARTWORK);
             m_postMaxSizeLabel = create_control(
-                0, L"STATIC", L"最大サイズ(px)", 0);
+                0, L"STATIC", ui_text(L"最大サイズ(px)"), 0);
             m_postMaxSizeEdit = create_control(
                 WS_EX_CLIENTEDGE, L"EDIT", L"",
                 WS_TABSTOP | ES_AUTOHSCROLL | ES_NUMBER, IDC_POST_MAX_SIZE);
             m_postFormatLabel = create_control(
-                0, L"STATIC", L"形式", 0);
+                0, L"STATIC", ui_text(L"形式"), 0);
             m_postFormatCombo = create_control(
                 0, L"COMBOBOX", L"",
                 WS_TABSTOP | CBS_DROPDOWNLIST | WS_VSCROLL, IDC_POST_FORMAT);
             SendMessageW(m_postFormatCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"JPEG"));
             SendMessageW(m_postFormatCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"PNG"));
             m_jpegQualityLabel = create_control(
-                0, L"STATIC", L"JPEG画質", 0);
+                0, L"STATIC", ui_text(L"JPEG画質"), 0);
             m_jpegQualityEdit = create_control(
                 WS_EX_CLIENTEDGE, L"EDIT", L"",
                 WS_TABSTOP | ES_AUTOHSCROLL | ES_NUMBER, IDC_JPEG_QUALITY);
             m_squareModeLabel = create_control(
-                0, L"STATIC", L"画像処理", 0);
+                0, L"STATIC", ui_text(L"画像処理"), 0);
             m_squareModeCombo = create_control(
                 0, L"COMBOBOX", L"",
                 WS_TABSTOP | CBS_DROPDOWNLIST | WS_VSCROLL, IDC_SQUARE_MODE);
-            SendMessageW(m_squareModeCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"そのまま縮小"));
-            SendMessageW(m_squareModeCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"中央を正方形に切り抜く"));
+            SendMessageW(m_squareModeCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(ui_text(L"そのまま縮小")));
+            SendMessageW(m_squareModeCombo, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(ui_text(L"中央を正方形に切り抜く")));
             m_historyLimitLabel = create_control(
-                0, L"STATIC", L"履歴保存上限", 0);
+                0, L"STATIC", ui_text(L"履歴保存上限"), 0);
             m_historyLimitEdit = create_control(
                 WS_EX_CLIENTEDGE, L"EDIT", L"",
                 WS_TABSTOP | ES_AUTOHSCROLL | ES_NUMBER,
                 IDC_HISTORY_LIMIT);
             m_historyLimitUnitLabel = create_control(
-                0, L"STATIC", L"件（10～1000）", 0);
+                0, L"STATIC", ui_text(L"件（10～1000）"), 0);
             m_historyDisplayLimitLabel = create_control(
-                0, L"STATIC", L"履歴表示上限", 0);
+                0, L"STATIC", ui_text(L"履歴表示上限"), 0);
             m_historyDisplayLimitCombo = create_control(
                 0, L"COMBOBOX", L"",
                 WS_TABSTOP | CBS_DROPDOWNLIST | WS_VSCROLL,
@@ -6247,37 +6534,53 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
                 m_historyDisplayLimitCombo,
                 CB_ADDSTRING,
                 0,
-                reinterpret_cast<LPARAM>(L"すべて表示"));
+                reinterpret_cast<LPARAM>(ui_text(L"すべて表示")));
             SendMessageW(
                 m_historyDisplayLimitCombo,
                 CB_ADDSTRING,
                 0,
-                reinterpret_cast<LPARAM>(L"最新50件"));
+                reinterpret_cast<LPARAM>(ui_text(L"最新50件")));
             SendMessageW(
                 m_historyDisplayLimitCombo,
                 CB_ADDSTRING,
                 0,
-                reinterpret_cast<LPARAM>(L"最新100件"));
+                reinterpret_cast<LPARAM>(ui_text(L"最新100件")));
             SendMessageW(
                 m_historyDisplayLimitCombo,
                 CB_ADDSTRING,
                 0,
-                reinterpret_cast<LPARAM>(L"最新200件"));
+                reinterpret_cast<LPARAM>(ui_text(L"最新200件")));
             SendMessageW(
                 m_historyDisplayLimitCombo,
                 CB_ADDSTRING,
                 0,
-                reinterpret_cast<LPARAM>(L"最新500件"));
+                reinterpret_cast<LPARAM>(ui_text(L"最新500件")));
+            m_languageLabel = create_control(
+                0, L"STATIC", ui_uses_english() ? L"Language" : L"表示言語", 0);
+            m_languageCombo = create_control(
+                0, L"COMBOBOX", L"",
+                WS_TABSTOP | CBS_DROPDOWNLIST | WS_VSCROLL,
+                IDC_LANGUAGE);
+            SendMessageW(
+                m_languageCombo, CB_ADDSTRING, 0,
+                reinterpret_cast<LPARAM>(
+                    ui_uses_english() ? L"Automatic" : L"自動"));
+            SendMessageW(
+                m_languageCombo, CB_ADDSTRING, 0,
+                reinterpret_cast<LPARAM>(L"日本語"));
+            SendMessageW(
+                m_languageCombo, CB_ADDSTRING, 0,
+                reinterpret_cast<LPARAM>(L"English"));
             m_exportSettingsButton = create_control(
-                0, L"BUTTON", L"設定を書き出す...",
+                0, L"BUTTON", ui_text(L"設定を書き出す..."),
                 WS_TABSTOP | BS_PUSHBUTTON,
                 IDC_EXPORT_SETTINGS);
             m_importSettingsButton = create_control(
-                0, L"BUTTON", L"設定を読み込む...",
+                0, L"BUTTON", ui_text(L"設定を読み込む..."),
                 WS_TABSTOP | BS_PUSHBUTTON,
                 IDC_IMPORT_SETTINGS);
             m_helpButton = create_control(
-                0, L"BUTTON", L"ヘルプ",
+                0, L"BUTTON", ui_text(L"ヘルプ"),
                 WS_TABSTOP | BS_PUSHBUTTON,
                 IDC_HELP_BUTTON);
             m_note = create_control(
@@ -6299,16 +6602,26 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
 
             // Keep the template toolbar compact so it fits inside
             // foobar2000's preference page without clipping.
+            const bool englishLayout = ui_uses_english();
             const int actionGap = 3;
-            const int normalActionWidth = 42;
+            const int addActionWidth =
+                englishLayout ? 42 : 42;
+            const int duplicateActionWidth =
+                englishLayout ? 64 : 42;
+            const int deleteActionWidth =
+                englishLayout ? 50 : 42;
             const int arrowActionWidth = 28;
-            const int resetActionWidth = 52;
+            const int resetActionWidth =
+                englishLayout ? 50 : 52;
             const int actionTotalWidth =
-                normalActionWidth * 3 +
+                addActionWidth +
+                duplicateActionWidth +
+                deleteActionWidth +
                 arrowActionWidth * 2 +
                 resetActionWidth +
                 actionGap * 5;
-            const int templateLabelWidth = 108;
+            const int templateLabelWidth =
+                englishLayout ? 100 : 108;
             const int templateComboX =
                 margin + templateLabelWidth;
             const int templateComboWidth =
@@ -6323,16 +6636,16 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
                 templateComboWidth, 240, TRUE);
             MoveWindow(
                 m_addTemplateButton, actionX, 5,
-                normalActionWidth, 25, TRUE);
-            actionX += normalActionWidth + actionGap;
+                addActionWidth, 25, TRUE);
+            actionX += addActionWidth + actionGap;
             MoveWindow(
                 m_duplicateTemplateButton, actionX, 5,
-                normalActionWidth, 25, TRUE);
-            actionX += normalActionWidth + actionGap;
+                duplicateActionWidth, 25, TRUE);
+            actionX += duplicateActionWidth + actionGap;
             MoveWindow(
                 m_deleteTemplateButton, actionX, 5,
-                normalActionWidth, 25, TRUE);
-            actionX += normalActionWidth + actionGap;
+                deleteActionWidth, 25, TRUE);
+            actionX += deleteActionWidth + actionGap;
             MoveWindow(
                 m_moveTemplateUpButton, actionX, 5,
                 arrowActionWidth, 25, TRUE);
@@ -6375,31 +6688,49 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
             int settingsX = margin;
             const int settingsY = 334;
 
+            const int maxSizeLabelWidth =
+                englishLayout ? 78 : 92;
+            const int maxSizeEditWidth =
+                englishLayout ? 64 : 70;
+            const int formatLabelWidth =
+                englishLayout ? 44 : 32;
+            const int formatComboWidth =
+                englishLayout ? 76 : 76;
+            const int qualityLabelWidth =
+                englishLayout ? 48 : 66;
+            const int qualityEditWidth = 56;
+
             MoveWindow(
                 m_postMaxSizeLabel,
-                settingsX, settingsY + 2, 92, 20, TRUE);
-            settingsX += 92;
+                settingsX, settingsY + 2,
+                maxSizeLabelWidth, 20, TRUE);
+            settingsX += maxSizeLabelWidth;
             MoveWindow(
                 m_postMaxSizeEdit,
-                settingsX, settingsY, 70, 23, TRUE);
-            settingsX += 70 + compactGap;
+                settingsX, settingsY,
+                maxSizeEditWidth, 23, TRUE);
+            settingsX += maxSizeEditWidth + compactGap;
 
             MoveWindow(
                 m_postFormatLabel,
-                settingsX, settingsY + 2, 32, 20, TRUE);
-            settingsX += 32;
+                settingsX, settingsY + 2,
+                formatLabelWidth, 20, TRUE);
+            settingsX += formatLabelWidth;
             MoveWindow(
                 m_postFormatCombo,
-                settingsX, settingsY, 76, 180, TRUE);
-            settingsX += 76 + compactGap;
+                settingsX, settingsY,
+                formatComboWidth, 180, TRUE);
+            settingsX += formatComboWidth + compactGap;
 
             MoveWindow(
                 m_jpegQualityLabel,
-                settingsX, settingsY + 2, 66, 20, TRUE);
-            settingsX += 66;
+                settingsX, settingsY + 2,
+                qualityLabelWidth, 20, TRUE);
+            settingsX += qualityLabelWidth;
             MoveWindow(
                 m_jpegQualityEdit,
-                settingsX, settingsY, 56, 23, TRUE);
+                settingsX, settingsY,
+                qualityEditWidth, 23, TRUE);
 
             const int squareY = 362;
             MoveWindow(
@@ -6414,34 +6745,61 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
             const int historyHalfWidth =
                 max(220, (innerWidth - gap) / 2);
 
+            const int historyLabelWidth =
+                englishLayout ? 66 : 92;
+            const int historyEditWidth = 62;
+            const int historyUnitGap = 6;
+
             MoveWindow(
                 m_historyLimitLabel,
-                margin, historyY + 2, 92, 20, TRUE);
+                margin, historyY + 2,
+                historyLabelWidth, 20, TRUE);
             MoveWindow(
                 m_historyLimitEdit,
-                margin + 94, historyY, 62, 23, TRUE);
+                margin + historyLabelWidth + 2,
+                historyY, historyEditWidth, 23, TRUE);
+            const int historyUnitX =
+                margin + historyLabelWidth +
+                historyEditWidth + historyUnitGap;
             MoveWindow(
                 m_historyLimitUnitLabel,
-                margin + 162, historyY + 2,
-                max(72, historyHalfWidth - 162), 20, TRUE);
+                historyUnitX, historyY + 2,
+                max(54,
+                    historyHalfWidth -
+                    (historyUnitX - margin)),
+                20, TRUE);
 
             const int displayX =
                 margin + historyHalfWidth + gap;
+            const int displayLabelWidth =
+                englishLayout ? 74 : 92;
             MoveWindow(
                 m_historyDisplayLimitLabel,
-                displayX, historyY + 2, 92, 20, TRUE);
+                displayX, historyY + 2,
+                displayLabelWidth, 20, TRUE);
             MoveWindow(
                 m_historyDisplayLimitCombo,
-                displayX + 94, historyY,
-                max(112, innerWidth - historyHalfWidth -
-                    gap - 94),
+                displayX + displayLabelWidth + 2,
+                historyY,
+                max(100,
+                    innerWidth - historyHalfWidth -
+                    gap - displayLabelWidth - 2),
                 180,
                 TRUE);
+
+            const int languageY = 418;
+            MoveWindow(
+                m_languageLabel,
+                margin, languageY + 2, 92, 20, TRUE);
+            MoveWindow(
+                m_languageCombo,
+                margin + 94, languageY,
+                max(150, innerWidth - 94), 120, TRUE);
 
             // Anchor the buttons near the bottom of the actual page.
             const int clientHeight = max(1, rc.bottom - rc.top);
             const int settingsButtonY =
-                max(historyY + 28, clientHeight - 32);
+                max(languageY + 30, clientHeight - 32);
             const int helpButtonWidth = 76;
             const int settingsButtonWidth =
                 max(1, (innerWidth - helpButtonWidth -
@@ -6516,6 +6874,11 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
                 m_historyDisplayLimitCombo,
                 CB_SETCURSEL,
                 configured_history_display_limit_index(),
+                0);
+            SendMessageW(
+                m_languageCombo,
+                CB_SETCURSEL,
+                configured_ui_language_index(),
                 0);
             update_optimization_controls_enabled();
             m_initializing = false;
@@ -6593,7 +6956,7 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
         void reset_templates_only() {
             if (MessageBoxW(
                     m_wnd,
-                    L"テンプレートを初期状態の5個へ戻しますか？",
+                    ui_text(L"テンプレートを初期状態の5個へ戻しますか？"),
                     L"NowPlaying Copy & Artwork",
                     MB_YESNO | MB_ICONQUESTION |
                         MB_DEFBUTTON2) != IDYES) {
@@ -6641,7 +7004,7 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
             if (m_templateNames.size() >= template_max_count) {
                 MessageBoxW(
                     m_wnd,
-                    L"テンプレートは最大20個です。",
+                    ui_text(L"テンプレートは最大20個です。"),
                     L"NowPlaying Copy & Artwork",
                     MB_OK | MB_ICONINFORMATION);
                 return;
@@ -6649,7 +7012,7 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
 
             const size_t number = m_templateNames.size() + 1;
             m_templateNames.push_back(
-                L"テンプレート " + std::to_wstring(number));
+                ui_text(L"テンプレート ") + std::to_wstring(number));
             m_templateFormats.push_back(
                 utf8_to_wide(default_post_format));
             m_selectedTemplate =
@@ -6666,7 +7029,7 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
             if (m_templateNames.size() >= template_max_count) {
                 MessageBoxW(
                     m_wnd,
-                    L"テンプレートは最大20個です。",
+                    ui_text(L"テンプレートは最大20個です。"),
                     L"NowPlaying Copy & Artwork",
                     MB_OK | MB_ICONINFORMATION);
                 return;
@@ -6682,10 +7045,10 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
             std::wstring copiedName =
                 m_templateNames[sourceIndex];
             if (copiedName.empty()) {
-                copiedName = L"テンプレート " +
+                copiedName = ui_text(L"テンプレート ") +
                     std::to_wstring(sourceIndex + 1);
             }
-            copiedName += L" のコピー";
+            copiedName += ui_text(L" のコピー");
             m_templateNames.push_back(std::move(copiedName));
             m_templateFormats.push_back(
                 m_templateFormats[sourceIndex]);
@@ -6701,7 +7064,7 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
             if (m_templateNames.size() <= template_min_count) {
                 MessageBoxW(
                     m_wnd,
-                    L"テンプレートは最低1個必要です。",
+                    ui_text(L"テンプレートは最低1個必要です。"),
                     L"NowPlaying Copy & Artwork",
                     MB_OK | MB_ICONINFORMATION);
                 return;
@@ -6715,7 +7078,7 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
             std::wstring confirmation = L"テンプレート「";
             confirmation +=
                 m_templateNames[static_cast<size_t>(m_selectedTemplate)];
-            confirmation += L"」を削除しますか？";
+            confirmation += ui_text(L"」を削除しますか？");
             if (MessageBoxW(
                     m_wnd,
                     confirmation.c_str(),
@@ -6774,7 +7137,7 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
         void populate_template_combo() {
             if (m_templateCombo == nullptr) return;
             if (m_templateNames.empty()) {
-                m_templateNames.push_back(L"シンプル");
+                m_templateNames.push_back(ui_text(L"シンプル"));
                 m_templateFormats.push_back(
                     utf8_to_wide(default_post_format));
             }
@@ -6792,7 +7155,7 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
                  ++index) {
                 std::wstring label = m_templateNames[index];
                 if (label.empty()) {
-                    label = L"テンプレート " +
+                    label = ui_text(L"テンプレート ") +
                         std::to_wstring(index + 1);
                 }
                 SendMessageW(
@@ -6889,6 +7252,11 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
                     0,
                     0) !=
                 configured_history_display_limit_index()) return true;
+            if (SendMessageW(
+                    m_languageCombo,
+                    CB_GETCURSEL,
+                    0,
+                    0) != configured_ui_language_index()) return true;
             return false;
         }
 
@@ -7066,18 +7434,24 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
                 << "\r\n";
             ini << "HistoryDisplayLimit="
                 << historyDisplayLimit << "\r\n";
+            const LRESULT languageSelection =
+                SendMessageW(m_languageCombo, CB_GETCURSEL, 0, 0);
+            ini << "Language="
+                << (languageSelection == 1 ? "ja" :
+                    languageSelection == 2 ? "en" : "auto")
+                << "\r\n";
 
             if (!write_utf8_text(destination, ini.str())) {
                 MessageBoxW(
                     m_wnd,
-                    L"設定ファイルを書き出せませんでした。",
+                    ui_text(L"設定ファイルを書き出せませんでした。"),
                     L"NowPlaying Copy & Artwork",
                     MB_OK | MB_ICONERROR);
                 return;
             }
 
             std::wstring message =
-                L"設定を書き出しました。\r\n\r\n";
+                ui_text(L"設定を書き出しました。\r\n\r\n");
             message += destination.wstring();
             MessageBoxW(
                 m_wnd,
@@ -7115,7 +7489,7 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
                     100) != 1) {
                 MessageBoxW(
                     m_wnd,
-                    L"対応していない設定ファイルのバージョンです。",
+                    ui_text(L"対応していない設定ファイルのバージョンです。"),
                     L"NowPlaying Copy & Artwork",
                     MB_OK | MB_ICONERROR);
                 return;
@@ -7160,7 +7534,7 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
                         formatKey,
                         ""));
                 if (name.empty()) {
-                    name = L"テンプレート " +
+                    name = ui_text(L"テンプレート ") +
                         std::to_wstring(index + 1);
                 }
                 if (format.empty()) {
@@ -7361,8 +7735,11 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
 
             MessageBoxW(
                 m_wnd,
-                L"設定を読み込みました。\r\n\r\n"
-                L"［適用］または［OK］を押すと保存されます。",
+                ui_uses_english()
+                    ? L"Settings were imported.\r\n\r\n"
+                      L"Press [Apply] or [OK] to save."
+                    : L"設定を読み込みました。\r\n\r\n"
+                      L"［適用］または［OK］を押すと保存されます。",
                 L"NowPlaying Copy & Artwork",
                 MB_OK | MB_ICONINFORMATION);
         }
@@ -7379,7 +7756,7 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
             const std::wstring current = get_window_text_string(m_outputEdit);
             BROWSEINFOW info{};
             info.hwndOwner = m_wnd;
-            info.lpszTitle = L"NowPlayingの保存先フォルダを選択してください。";
+            info.lpszTitle = ui_text(L"NowPlayingの保存先フォルダを選択してください。");
             info.ulFlags = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE;
             info.lpfn = browse_callback;
             info.lParam = reinterpret_cast<LPARAM>(current.c_str());
@@ -7430,6 +7807,8 @@ nowplaying-history.tsvはExcelやメモ帳で閲覧できますが、
         HWND m_historyLimitUnitLabel = nullptr;
         HWND m_historyDisplayLimitLabel = nullptr;
         HWND m_historyDisplayLimitCombo = nullptr;
+        HWND m_languageLabel = nullptr;
+        HWND m_languageCombo = nullptr;
         HWND m_exportSettingsButton = nullptr;
         HWND m_importSettingsButton = nullptr;
         HWND m_helpButton = nullptr;
@@ -7475,11 +7854,11 @@ public:
 
     void get_name(t_uint32 index, pfc::string_base& out) override {
         if (index == 0) {
-            out = "NowPlaying投稿を作成";
+            out = ui_text_utf8("NowPlaying投稿を作成", "Create NowPlaying Post");
         } else if (index == 1) {
-            out = "NowPlaying投稿履歴";
+            out = ui_text_utf8("NowPlaying投稿履歴", "NowPlaying Post History");
         } else if (index == 2) {
-            out = "NowPlayingヘルプ";
+            out = ui_text_utf8("NowPlayingヘルプ", "NowPlaying Help");
         }
     }
 
@@ -7488,15 +7867,15 @@ public:
         pfc::string_base& out
     ) override {
         if (index == 0) {
-            out = "再生中の曲から投稿文とアートワークを作成し、プレビューします。";
+            out = ui_text_utf8("再生中の曲から投稿文とアートワークを作成し、プレビューします。", "Create and preview post text and artwork from the playing track.");
             return true;
         }
         if (index == 1) {
-            out = "保存済みのNowPlaying投稿履歴を開きます。";
+            out = ui_text_utf8("保存済みのNowPlaying投稿履歴を開きます。", "Open saved NowPlaying post history.");
             return true;
         }
         if (index == 2) {
-            out = "NowPlaying Copy & Artworkの操作方法と設定項目を表示します。";
+            out = ui_text_utf8("NowPlaying Copy & Artworkの操作方法と設定項目を表示します。", "Show help for NowPlaying Copy & Artwork.");
             return true;
         }
         return false;
