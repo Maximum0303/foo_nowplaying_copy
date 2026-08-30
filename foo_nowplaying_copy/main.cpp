@@ -32,7 +32,7 @@ namespace fs = std::filesystem;
 
 DECLARE_COMPONENT_VERSION(
     "NowPlaying Copy & Artwork",
-    "1.2.2",
+    "1.2.3",
     "Creates NowPlaying post text and artwork.\\n"
     "Japanese / English user interface.\\n"
     "Copyright (c) 2026 Maximum\\n"
@@ -332,6 +332,37 @@ namespace {
         if (std::wcscmp(japanese, L"アルバム情報") == 0) return L"Album Info";
         if (std::wcscmp(japanese, L"引用タイプ") == 0) return L"Quote";
         if (std::wcscmp(japanese, L"自由設定") == 0) return L"Custom";
+        if (std::wcscmp(japanese, L"\r\n投稿用：") == 0) return L"\r\nPost image: ";
+        if (std::wcscmp(japanese, L"・画質") == 0) return L" · Quality ";
+        if (std::wcscmp(japanese, L"・") == 0) return L" · ";
+        if (std::wcscmp(japanese, L"・最大") == 0) return L" · Max ";
+        if (std::wcscmp(japanese, L"投稿履歴（表示 ") == 0) return L"Post History (shown ";
+        if (std::wcscmp(japanese, L" / 保存 ") == 0) return L" / saved ";
+        if (std::wcscmp(japanese, L"件・★") == 0) return L" · ★";
+        if (std::wcscmp(japanese, L"件・通常履歴上限 ") == 0) return L" · normal limit ";
+        if (std::wcscmp(japanese, L"件・表示上限 ") == 0) return L" · display limit ";
+        if (std::wcscmp(japanese, L"・検索は全履歴対象") == 0) return L" · searching all history";
+        if (std::wcscmp(japanese, L"・ピン留めのみ") == 0) return L" · pinned only";
+        if (std::wcscmp(japanese, L"履歴ファイル：") == 0) return L"History file: ";
+        if (std::wcscmp(japanese, L"\r\nテンプレート：") == 0) return L"\r\nTemplate: ";
+        if (std::wcscmp(japanese, L"件選択中（★") == 0) return L" selected (★";
+        if (std::wcscmp(japanese, L"件）\r\n") == 0) return L" pinned)\r\n";
+        if (std::wcscmp(japanese, L"X換算の目安が280を超えています（") == 0) return L"Estimated X count exceeds 280 (";
+        if (std::wcscmp(japanese, L"\r\n\r\n追加：") == 0) return L"\r\n\r\nAdded: ";
+        if (std::wcscmp(japanese, L"件\r\n重複のため省略：") == 0) return L" items\r\nSkipped duplicates: ";
+        if (std::wcscmp(japanese, L"\r\n重複履歴へピン留めを復元：") == 0) return L"\r\nPins restored on duplicates: ";
+        if (std::wcscmp(japanese, L"\r\n画像なし：") == 0) return L"\r\nMissing images: ";
+        if (std::wcscmp(japanese, L"\r\n現在の保存件数：") == 0) return L"\r\nCurrently saved: ";
+        if (std::wcscmp(japanese, L"\r\n\r\n★ピン留め中の履歴 ") == 0) return L"\r\n\r\nThis also deletes ";
+        if (std::wcscmp(japanese, L"件も削除されます。") == 0) return L" pinned entries.";
+        if (std::wcscmp(japanese, L"最適化に失敗したため元画像を使用します。\r\n") == 0) return L"Optimization failed; using the source image.\r\n";
+        if (std::wcscmp(japanese, L"\r\n\r\nテキスト：\r\n") == 0) return L"\r\n\r\nText:\r\n";
+        if (std::wcscmp(japanese, L"\r\n\r\nテキストファイルを保存できませんでした。") == 0) return L"\r\n\r\nCould not save the text file.";
+        if (std::wcscmp(japanese, L"\r\n\r\nアートワーク（") == 0) return L"\r\n\r\nArtwork (";
+        if (std::wcscmp(japanese, L"\r\n\r\n投稿用アートワーク：\r\n") == 0) return L"\r\n\r\nPost artwork:\r\n";
+        if (std::wcscmp(japanese, L"\r\n\r\nアートワークは見つかりませんでした。") == 0) return L"\r\n\r\nNo artwork was found.";
+        if (std::wcscmp(japanese, L"\r\n\r\n診断ログ：\r\n") == 0) return L"\r\n\r\nDiagnostic log:\r\n";
+        if (std::wcscmp(japanese, L"INIにはテンプレートと各種設定を保存します。投稿履歴と履歴画像は含みません。読み込み後は［適用］または［OK］で保存してください。") == 0) return L"The INI stores templates and settings. Post history and history images are not included. After importing, press [Apply] or [OK] to save.";
         return japanese;
     }
 
@@ -630,6 +661,19 @@ namespace {
     }
 
     std::vector<post_template_definition> legacy_template_definitions() {
+        const pfc::string8 schemaBeforeRepair =
+            g_cfg_template_schema_version.get();
+        const pfc::string8 collectionBeforeRepair =
+            g_cfg_template_collection.get();
+
+        // A completely new installation has neither schema nor template
+        // collection. In that case create defaults in the active UI language.
+        // Existing installations keep their stored template names/formats.
+        if (schemaBeforeRepair.is_empty() &&
+            collectionBeforeRepair.is_empty()) {
+            return default_template_definitions();
+        }
+
         repair_legacy_template_settings();
         std::vector<post_template_definition> templates;
         templates.reserve(template_default_count);
@@ -1667,7 +1711,7 @@ namespace {
                 detailText += format_file_size(sourceBytes);
             }
 
-            detailText += L"\r\n投稿用：";
+            detailText += ui_text(L"\r\n投稿用：");
             detailText += std::to_wstring(targetWidth);
             detailText += L" × ";
             detailText += std::to_wstring(targetHeight);
@@ -1683,12 +1727,12 @@ namespace {
             detailText += L"\r\n";
             detailText += settings.png ? L"PNG" : L"JPEG";
             if (!settings.png) {
-                detailText += L"・画質";
+                detailText += ui_text(L"・画質");
                 detailText += std::to_wstring(settings.jpegQuality);
             }
-            detailText += L"・";
+            detailText += ui_text(L"・");
             detailText += artwork_square_mode_label(settings.squareMode);
-            detailText += L"・最大";
+            detailText += ui_text(L"・最大");
             detailText += std::to_wstring(settings.maxSize);
             detailText += L"px";
         } else {
@@ -3156,22 +3200,22 @@ namespace {
                     }));
 
             std::wstring listTitle =
-                L"投稿履歴（表示 ";
+                ui_text(L"投稿履歴（表示 ");
             listTitle +=
                 std::to_wstring(m_visibleIndices.size());
-            listTitle += L" / 保存 ";
+            listTitle += ui_text(L" / 保存 ");
             listTitle += std::to_wstring(m_records.size());
-            listTitle += L"件・★";
+            listTitle += ui_text(L"件・★");
             listTitle += std::to_wstring(pinnedCount);
-            listTitle += L"件・通常履歴上限 ";
+            listTitle += ui_text(L"件・通常履歴上限 ");
             listTitle += std::to_wstring(configured_history_limit());
-            listTitle += L"件・表示上限 ";
+            listTitle += ui_text(L"件・表示上限 ");
             listTitle += configured_history_display_limit_label();
             if (searching) {
-                listTitle += L"・検索は全履歴対象";
+                listTitle += ui_text(L"・検索は全履歴対象");
             }
             if (pinnedOnly) {
-                listTitle += L"・ピン留めのみ";
+                listTitle += ui_text(L"・ピン留めのみ");
             }
             listTitle += L"）";
             SetWindowTextW(
@@ -3201,7 +3245,7 @@ namespace {
             rebuild_history_list();
 
             std::wstring status =
-                L"履歴ファイル：";
+                ui_text(L"履歴ファイル：");
             status +=
                 history_file_path(
                     m_outputDirectory).wstring();
@@ -3285,7 +3329,7 @@ namespace {
 
                 std::wstring metadata =
                     ui_text(L"日時：") + record.timestamp;
-                metadata += L"\r\nテンプレート：";
+                metadata += ui_text(L"\r\nテンプレート：");
                 metadata += record.templateName.empty()
                     ? ui_text(L"（不明）")
                     : record.templateName;
@@ -3328,10 +3372,10 @@ namespace {
 
                 std::wstring metadata =
                     std::to_wstring(selectionCount);
-                metadata += L"件選択中（★";
+                metadata += ui_text(L"件選択中（★");
                 metadata +=
                     std::to_wstring(selectedPinnedCount);
-                metadata += L"件）\r\n";
+                metadata += ui_text(L"件）\r\n");
                 metadata += ui_text(L"文章コピー・ピン留め・削除を一括操作できます。");
                 SetWindowTextW(
                     m_metadataLabel,
@@ -3552,7 +3596,7 @@ namespace {
             if (weighted <= 280) return true;
 
             const std::wstring warning =
-                L"X換算の目安が280を超えています（" +
+                ui_text(L"X換算の目安が280を超えています（") +
                 std::to_wstring(weighted) +
                 ui_text(L"）。そのままXの投稿画面を開きますか？");
 
@@ -3743,15 +3787,19 @@ namespace {
                             : L'-');
                 }
                 defaultName += L".zip";
-                std::wcsncpy(
+                wcsncpy_s(
                     filePath,
+                    std::size(filePath),
                     defaultName.c_str(),
-                    std::size(filePath) - 1);
+                    _TRUNCATE);
             }
 
-            const wchar_t filter[] =
-                L"NowPlaying履歴バックアップ (*.zip)\0*.zip\0"
-                L"すべてのファイル (*.*)\0*.*\0\0";
+            const wchar_t* filter =
+                ui_uses_english()
+                    ? L"NowPlaying History Backup (*.zip)\0*.zip\0"
+                      L"All Files (*.*)\0*.*\0\0"
+                    : L"NowPlaying履歴バックアップ (*.zip)\0*.zip\0"
+                      L"すべてのファイル (*.*)\0*.*\0\0";
 
             OPENFILENAMEW dialog{};
             dialog.lStructSize = sizeof(dialog);
@@ -4207,24 +4255,24 @@ namespace {
                 append
                     ? ui_text(L"投稿履歴を追加しました。")
                     : ui_text(L"投稿履歴を置き換えました。");
-            message += L"\r\n\r\n追加：";
+            message += ui_text(L"\r\n\r\n追加：");
             message += std::to_wstring(addedCount);
-            message += L"件\r\n重複のため省略：";
+            message += ui_text(L"件\r\n重複のため省略：");
             message += std::to_wstring(duplicateCount);
             message += ui_text(L"件");
             if (restoredPinCount > 0) {
-                message += L"\r\n重複履歴へピン留めを復元：";
+                message += ui_text(L"\r\n重複履歴へピン留めを復元：");
                 message +=
                     std::to_wstring(restoredPinCount);
                 message += ui_text(L"件");
             }
             if (missingArtworkCount > 0) {
-                message += L"\r\n画像なし：";
+                message += ui_text(L"\r\n画像なし：");
                 message +=
                     std::to_wstring(missingArtworkCount);
                 message += ui_text(L"件");
             }
-            message += L"\r\n現在の保存件数：";
+            message += ui_text(L"\r\n現在の保存件数：");
             message +=
                 std::to_wstring(m_records.size());
             message += ui_text(L"件");
@@ -4251,9 +4299,9 @@ namespace {
             std::wstring confirmation =
                 ui_text(L"すべての投稿履歴を削除しますか？");
             if (pinnedCount > 0) {
-                confirmation += L"\r\n\r\n★ピン留め中の履歴 ";
+                confirmation += ui_text(L"\r\n\r\n★ピン留め中の履歴 ");
                 confirmation += std::to_wstring(pinnedCount);
-                confirmation += L"件も削除されます。";
+                confirmation += ui_text(L"件も削除されます。");
             }
 
             if (MessageBoxW(
@@ -4813,7 +4861,7 @@ namespace {
             if (weighted <= 280) return true;
 
             const std::wstring warning =
-                L"X換算の目安が280を超えています（" +
+                ui_text(L"X換算の目安が280を超えています（") +
                 std::to_wstring(weighted) +
                 ui_text(L"）。そのままXの投稿画面を開きますか？");
             return MessageBoxW(
@@ -5150,7 +5198,7 @@ namespace {
                     artworkForPost = optimizedPath;
                     optimizationInfo = optimizedInfo;
                 } else {
-                    optimizationInfo = L"最適化に失敗したため元画像を使用します。\r\n";
+                    optimizationInfo = ui_text(L"最適化に失敗したため元画像を使用します。\r\n");
                     optimizationInfo += describe_artwork_file(exported, ui_text(L"元画像"));
                 }
             } else {
@@ -5160,7 +5208,7 @@ namespace {
         }
 
         std::wstring debug;
-        debug += L"Component version: 1.2.2\r\n";
+        debug += L"Component version: 1.2.3\r\n";
         debug += L"Raw path: " + rawPath + L"\r\n";
         debug += L"Template index: " +
             std::to_wstring(templateIndex + 1) + L"\r\n";
@@ -5216,20 +5264,20 @@ namespace {
             ui_text(L"クリップボードへのコピーに失敗しました。");
         if (saveText) {
             if (textOK) {
-                result += L"\r\n\r\nテキスト：\r\n";
+                result += ui_text(L"\r\n\r\nテキスト：\r\n");
                 result += (outDir / L"nowplaying.txt").wstring();
             } else {
-                result += L"\r\n\r\nテキストファイルを保存できませんでした。";
+                result += ui_text(L"\r\n\r\nテキストファイルを保存できませんでした。");
             }
         }
         if (saveArtwork) {
             if (artOK) {
-                result += L"\r\n\r\nアートワーク（";
+                result += ui_text(L"\r\n\r\nアートワーク（");
                 result += artworkSource;
                 result += L"）：\r\n";
                 result += exported.wstring();
                 if (!artworkForPost.empty() && artworkForPost != exported) {
-                    result += L"\r\n\r\n投稿用アートワーク：\r\n";
+                    result += ui_text(L"\r\n\r\n投稿用アートワーク：\r\n");
                     result += artworkForPost.wstring();
                     if (!optimizationInfo.empty()) {
                         result += L"\r\n";
@@ -5237,8 +5285,8 @@ namespace {
                     }
                 }
             } else {
-                result += L"\r\n\r\nアートワークは見つかりませんでした。";
-                result += L"\r\n\r\n診断ログ：\r\n";
+                result += ui_text(L"\r\n\r\nアートワークは見つかりませんでした。");
+                result += ui_text(L"\r\n\r\n診断ログ：\r\n");
                 result += debugPath.wstring();
             }
         }
@@ -5274,7 +5322,7 @@ namespace {
         static std::wstring help_text() {
             if (ui_uses_english()) {
                 return LR"HELP(NowPlaying Copy & Artwork Help
-Version 1.2.2
+Version 1.2.3
 
 [1. Basic Usage]
 1. Play a track in foobar2000.
@@ -5414,7 +5462,7 @@ See license.txt or LICENSE for the complete terms.
             }
 
             return LR"HELP(NowPlaying Copy & Artwork ヘルプ
-バージョン 1.2.2
+バージョン 1.2.3
 
 【1. 基本的な使い方】
 1. foobar2000で曲を再生します。
@@ -5711,7 +5759,7 @@ Copyright (c) 2026 Maximum
             m_titleLabel = create_control(
                 0,
                 L"STATIC",
-                ui_uses_english() ? L"NowPlaying Copy & Artwork Help  v1.2.2" : L"NowPlaying Copy & Artwork ヘルプ　v1.2.2",
+                ui_uses_english() ? L"NowPlaying Copy & Artwork Help  v1.2.3" : L"NowPlaying Copy & Artwork ヘルプ　v1.2.3",
                 0,
                 0);
 
@@ -6585,7 +6633,7 @@ Copyright (c) 2026 Maximum
                 IDC_HELP_BUTTON);
             m_note = create_control(
                 0, L"STATIC",
-                L"INIにはテンプレートと各種設定を保存します。投稿履歴と履歴画像は含みません。読み込み後は［適用］または［OK］で保存してください。",
+                ui_text(L"INIにはテンプレートと各種設定を保存します。投稿履歴と履歴画像は含みません。読み込み後は［適用］または［OK］で保存してください。"),
                 0);
         }
 
@@ -7075,10 +7123,16 @@ Copyright (c) 2026 Maximum
                 return;
             }
 
-            std::wstring confirmation = L"テンプレート「";
+            std::wstring confirmation =
+                ui_uses_english()
+                    ? L"Delete template \""
+                    : L"テンプレート「";
             confirmation +=
                 m_templateNames[static_cast<size_t>(m_selectedTemplate)];
-            confirmation += ui_text(L"」を削除しますか？");
+            confirmation +=
+                ui_uses_english()
+                    ? L"\"?"
+                    : L"」を削除しますか？";
             if (MessageBoxW(
                     m_wnd,
                     confirmation.c_str(),
@@ -7277,15 +7331,19 @@ Copyright (c) 2026 Maximum
             if (save) {
                 const wchar_t* defaultName =
                     L"NowPlaying-Copy-Settings.ini";
-                std::wcsncpy(
+                wcsncpy_s(
                     filePath,
+                    std::size(filePath),
                     defaultName,
-                    std::size(filePath) - 1);
+                    _TRUNCATE);
             }
 
-            const wchar_t filter[] =
-                L"INI設定ファイル (*.ini)\0*.ini\0"
-                L"すべてのファイル (*.*)\0*.*\0\0";
+            const wchar_t* filter =
+                ui_uses_english()
+                    ? L"INI Settings File (*.ini)\0*.ini\0"
+                      L"All Files (*.*)\0*.*\0\0"
+                    : L"INI設定ファイル (*.ini)\0*.ini\0"
+                      L"すべてのファイル (*.*)\0*.*\0\0";
 
             OPENFILENAMEW dialog{};
             dialog.lStructSize = sizeof(dialog);
